@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { ModernWizardApp } from "@/components/modern-wizard/ModernWizardApp";
 
 const queryClient = new QueryClient();
 
