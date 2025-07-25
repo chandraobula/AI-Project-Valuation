@@ -32,7 +32,7 @@ interface Step1Props {
 }
 
 const countries = [
-  { code: "US", name: "United States", flag: "🇺🇸" },
+  { code: "US", name: "United States", flag: "��🇸" },
   { code: "CA", name: "Canada", flag: "🇨🇦" },
   { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
   { code: "AU", name: "Australia", flag: "🇦🇺" },
@@ -50,7 +50,7 @@ const industries = [
   { value: "saas", label: "SaaS/Software", icon: "💻" },
   { value: "ecommerce", label: "E-commerce", icon: "🛒" },
   { value: "fintech", label: "FinTech", icon: "💳" },
-  { value: "healthtech", label: "HealthTech", icon: "���" },
+  { value: "healthtech", label: "HealthTech", icon: "🏥" },
   { value: "edtech", label: "EdTech", icon: "📚" },
   { value: "ai", label: "AI/ML", icon: "🤖" },
   { value: "biotech", label: "Biotech", icon: "🧬" },
@@ -222,7 +222,7 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
                       initial={{ opacity: 0, y: -10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      className="absolute top-full left-6 right-6 mt-2 bg-slate-900/95 border border-slate-700 rounded-lg shadow-2xl z-50 max-h-64 overflow-hidden backdrop-blur-xl"
+                      className="absolute top-full left-6 right-6 mt-2 bg-slate-900/95 border border-slate-700 rounded-lg shadow-2xl z-[9999] max-h-64 overflow-hidden backdrop-blur-xl"
                     >
                       <div className="p-3 border-b border-slate-700">
                         <div className="relative">
