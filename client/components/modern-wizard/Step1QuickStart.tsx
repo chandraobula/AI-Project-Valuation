@@ -222,7 +222,7 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
                       initial={{ opacity: 0, y: -10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      className="absolute top-full left-0 right-0 mt-2 bg-slate-900/95 border border-slate-700 rounded-lg shadow-2xl z-[9999] max-h-64 overflow-hidden backdrop-blur-xl"
+                      className="absolute top-full left-0 right-0 mt-2 bg-slate-900/95 border border-slate-700 rounded-lg shadow-2xl z-[99999] max-h-64 overflow-hidden backdrop-blur-xl"
                     >
                       <div className="p-3 border-b border-slate-700">
                         <div className="relative">
