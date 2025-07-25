@@ -124,8 +124,15 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
     if (watchedValues.industry) fields.push('industry');
     if (watchedValues.stage) fields.push('stage');
     if (watchedValues.isLaunched !== undefined) fields.push('isLaunched');
-    setCompletedFields(fields);
-  }, [watchedValues]);
+
+    // Only update if the fields actually changed
+    setCompletedFields(prev => {
+      if (prev.length !== fields.length || !fields.every(field => prev.includes(field))) {
+        return fields;
+      }
+      return prev;
+    });
+  }, [watchedValues.businessName, watchedValues.country, watchedValues.industry, watchedValues.stage, watchedValues.isLaunched]);
 
   // Autosave functionality
   useEffect(() => {
@@ -136,7 +143,7 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [watchedValues, onSave]);
+  }, [watchedValues.businessName, watchedValues.country, watchedValues.industry, watchedValues.stage, watchedValues.isLaunched, onSave]);
 
   const selectedCountry = countries.find(
     (c) => c.name === watchedValues.country,
