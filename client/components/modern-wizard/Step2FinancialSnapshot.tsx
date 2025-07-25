@@ -5,12 +5,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   DollarSign,
-  ArrowLeft,
+  TrendingUp,
+  TrendingDown,
+  Building,
+  Target,
+  CheckCircle,
+  ChevronDown,
   HelpCircle,
   Eye,
-  EyeOff,
-  TrendingUp,
+  EyeOff
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 const formSchema = z.object({
   revenue: z.coerce.number().min(0, "Revenue must be 0 or greater").optional(),
@@ -39,47 +45,24 @@ interface Step2Props {
   onSave?: (data: Partial<FormData>) => void;
 }
 
-interface TooltipData {
-  revenue: "Your total income from all sources in the last 12 months. Include all revenue streams, subscriptions, one-time sales, etc.";
-  monthlyBurnRate: "How much money you spend each month on average. Include salaries, rent, software, marketing, and all other expenses.";
-  netProfitLoss: "Revenue minus expenses. Positive means profit, negative means loss. This helps us understand your current financial health.";
-  fundingRaised: "Total amount of money you've raised from investors, grants, or loans since starting your business.";
-  planningToRaise: "How much funding you're looking to raise in your next round. This helps tailor the valuation for your fundraising goals.";
-}
-
-const tooltips: TooltipData = {
-  revenue:
-    "Your total income from all sources in the last 12 months. Include all revenue streams, subscriptions, one-time sales, etc.",
-  monthlyBurnRate:
-    "How much money you spend each month on average. Include salaries, rent, software, marketing, and all other expenses.",
-  netProfitLoss:
-    "Revenue minus expenses. Positive means profit, negative means loss. This helps us understand your current financial health.",
-  fundingRaised:
-    "Total amount of money you've raised from investors, grants, or loans since starting your business.",
-  planningToRaise:
-    "How much funding you're looking to raise in your next round. This helps tailor the valuation for your fundraising goals.",
+const tooltips = {
+  revenue: "Your total income from all sources in the last 12 months. Include all revenue streams, subscriptions, one-time sales, etc.",
+  monthlyBurnRate: "How much money you spend each month on average. Include salaries, rent, software, marketing, and all other expenses.",
+  netProfitLoss: "Revenue minus expenses. Positive means profit, negative means loss. This helps us understand your current financial health.",
+  fundingRaised: "Total amount of money you've raised from investors, grants, or loans since starting your business.",
+  planningToRaise: "How much funding you're looking to raise in your next round. This helps tailor the valuation for your fundraising goals.",
 };
 
-export function Step2FinancialSnapshot({
-  onNext,
-  onBack,
-  initialData,
-  onSave,
-}: Step2Props) {
-  const [showTooltip, setShowTooltip] = useState<keyof TooltipData | null>(
-    null,
-  );
-  const [skipMode, setSkipMode] = useState(
-    initialData?.skipFinancials || false,
-  );
-  const [showValues, setShowValues] = useState(true);
+export function Step2FinancialSnapshot({ onNext, onBack, initialData, onSave }: Step2Props) {
+  const [showTooltip, setShowTooltip] = useState<string | null>(null);
+  const [showValues, setShowValues] = useState(false);
 
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -104,302 +87,232 @@ export function Step2FinancialSnapshot({
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [watchedValues, onSave]);
+  }, [watchedValues.revenue, watchedValues.monthlyBurnRate, watchedValues.netProfitLoss, watchedValues.fundingRaised, watchedValues.planningToRaise, watchedValues.skipFinancials, onSave]);
 
   const onSubmit = (data: FormData) => {
-    if (skipMode) {
-      onNext({ ...data, skipFinancials: true });
-    } else {
-      onNext(data);
+    onNext(data);
+  };
+
+  const formatCurrency = (value: number | undefined) => {
+    if (!value) return "";
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const financialFields = [
+    {
+      key: "revenue",
+      label: "Annual Revenue",
+      placeholder: "0",
+      icon: DollarSign,
+      color: "text-green-400",
+      description: "Last 12 months total revenue"
+    },
+    {
+      key: "monthlyBurnRate", 
+      label: "Monthly Burn Rate",
+      placeholder: "0",
+      icon: TrendingDown,
+      color: "text-red-400",
+      description: "Monthly expenses"
+    },
+    {
+      key: "netProfitLoss",
+      label: "Net Profit/Loss",
+      placeholder: "0",
+      icon: TrendingUp,
+      color: "text-blue-400",
+      description: "Annual profit or loss"
+    },
+    {
+      key: "fundingRaised",
+      label: "Funding Raised",
+      placeholder: "0", 
+      icon: Building,
+      color: "text-purple-400",
+      description: "Total funding to date"
+    },
+    {
+      key: "planningToRaise",
+      label: "Planning to Raise",
+      placeholder: "0",
+      icon: Target,
+      color: "text-cyan-400", 
+      description: "Next funding round target"
     }
-  };
-
-  const formatCurrency = (value: number) => {
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
-    if (value >= 1e3) return `$${(value / 1e3).toFixed(0)}K`;
-    return `$${value.toLocaleString()}`;
-  };
-
-  const handleSkipToggle = () => {
-    setSkipMode(!skipMode);
-    setValue("skipFinancials", !skipMode);
-  };
-
-  const renderTooltip = (field: keyof TooltipData) => (
-    <div className="relative inline-block">
-      <button
-        type="button"
-        onMouseEnter={() => setShowTooltip(field)}
-        onMouseLeave={() => setShowTooltip(null)}
-        className="text-gray-400 hover:text-gray-600 transition-colors"
-      >
-        <HelpCircle className="w-4 h-4" />
-      </button>
-
-      <AnimatePresence>
-        {showTooltip === field && (
-          <motion.div
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 text-white text-sm rounded-xl shadow-lg z-50"
-          >
-            <div className="relative">
-              {tooltips[field]}
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-
-  const renderCurrencyInput = (
-    name: keyof FormData,
-    label: string,
-    placeholder: string,
-    tooltipKey: keyof TooltipData,
-    isOptional = false,
-  ) => (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="flex items-center space-x-2 text-sm font-medium text-gray-900">
-          <span>{label}</span>
-          {renderTooltip(tooltipKey)}
-          {isOptional && (
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-              Optional
-            </span>
-          )}
-        </label>
-        <button
-          type="button"
-          className="skip-button text-xs"
-          onClick={() => setValue(name, undefined)}
-        >
-          Clear
-        </button>
-      </div>
-      <div className="relative">
-        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
-          $
-        </div>
-        <input
-          {...register(name)}
-          type="number"
-          placeholder={placeholder}
-          className="wizard-input w-full pl-8"
-          disabled={skipMode}
-        />
-        {watchedValues[name] && showValues && (
-          <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm text-gray-600">
-            {formatCurrency(Number(watchedValues[name]))}
-          </div>
-        )}
-      </div>
-      {errors[name] && (
-        <motion.p
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-sm text-red-500"
-        >
-          {errors[name]?.message}
-        </motion.p>
-      )}
-    </div>
-  );
+  ];
 
   return (
-    <div className="max-w-2xl mx-auto px-4">
+    <div className="max-w-4xl mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="wizard-card p-8"
       >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4"
-          >
-            <DollarSign className="w-8 h-8 text-white" />
-          </motion.div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            💰 Tell us about your finances
-          </h1>
-          <p className="text-gray-600">
-            We keep it confidential and use this to provide more accurate
-            valuations
-          </p>
-        </div>
-
-        {/* Skip Option */}
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-amber-800">
-                Not ready to share financials?
-              </p>
-              <p className="text-xs text-amber-700">
-                You can skip this step and we'll estimate based on your industry
-                and stage
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleSkipToggle}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                skipMode
-                  ? "bg-amber-200 text-amber-800"
-                  : "bg-white text-amber-700 border border-amber-200"
-              }`}
-            >
-              {skipMode ? "Fill Details" : "Skip This Step"}
-            </button>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <AnimatePresence>
-            {!skipMode && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-6"
-              >
-                {/* Privacy Toggle */}
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <span className="text-sm text-gray-700">
-                    Show values as you type
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowValues(!showValues)}
-                    className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800"
-                  >
-                    {showValues ? (
-                      <Eye className="w-4 h-4" />
-                    ) : (
-                      <EyeOff className="w-4 h-4" />
-                    )}
-                    <span>{showValues ? "Hide" : "Show"}</span>
-                  </button>
-                </div>
-
-                {/* Revenue */}
-                {renderCurrencyInput(
-                  "revenue",
-                  "Total Revenue (Last 12 Months)",
-                  "0",
-                  "revenue",
-                )}
-
-                {/* Monthly Burn Rate */}
-                {renderCurrencyInput(
-                  "monthlyBurnRate",
-                  "Monthly Burn Rate",
-                  "0",
-                  "monthlyBurnRate",
-                )}
-
-                {/* Net Profit/Loss */}
-                {renderCurrencyInput(
-                  "netProfitLoss",
-                  "Net Profit / Loss (Monthly)",
-                  "0 (can be negative)",
-                  "netProfitLoss",
-                  true,
-                )}
-
-                {/* Funding Raised */}
-                {renderCurrencyInput(
-                  "fundingRaised",
-                  "Total Funding Raised",
-                  "0",
-                  "fundingRaised",
-                  true,
-                )}
-
-                {/* Planning to Raise */}
-                {renderCurrencyInput(
-                  "planningToRaise",
-                  "Amount You Want to Raise",
-                  "0",
-                  "planningToRaise",
-                  true,
-                )}
-
-                {/* Helper Text */}
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
-                  <div className="flex items-start space-x-3">
-                    <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-blue-800">
-                        💡 Pro Tip
-                      </p>
-                      <p className="text-sm text-blue-700">
-                        Don't worry if you're not sure about exact numbers.
-                        We'll help estimate based on your industry benchmarks
-                        and stage.
-                      </p>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          {/* Privacy Toggle */}
+          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center">
+                    {showValues ? <Eye className="w-5 h-5 text-blue-400" /> : <EyeOff className="w-5 h-5 text-slate-400" />}
+                  </div>
+                  <div>
+                    <div className="font-medium text-white font-mono">Privacy Mode</div>
+                    <div className="text-xs text-slate-400 font-mono">
+                      {showValues ? "Values visible" : "Values hidden"}
                     </div>
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {skipMode && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-8"
-            >
-              <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="w-6 h-6 text-amber-600" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowValues(!showValues)}
+                  className="border-slate-700 text-slate-300 hover:bg-slate-800 font-mono"
+                >
+                  {showValues ? "Hide" : "Show"} Values
+                </Button>
               </div>
-              <p className="text-gray-600">
-                No problem! We'll estimate your financials based on your
-                industry and stage.
-              </p>
-            </motion.div>
-          )}
+            </CardContent>
+          </Card>
+
+          {/* Financial Metrics Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {financialFields.map((field) => (
+              <Card key={field.key} className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm relative">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <field.icon className={`w-5 h-5 ${field.color}`} />
+                      <label className="text-sm font-medium text-white font-mono">
+                        {field.label}
+                      </label>
+                      {watchedValues[field.key as keyof FormData] !== undefined && watchedValues[field.key as keyof FormData] !== "" && (
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onMouseEnter={() => setShowTooltip(field.key)}
+                      onMouseLeave={() => setShowTooltip(null)}
+                      className="text-slate-400 hover:text-white transition-colors"
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <input
+                      {...register(field.key as keyof FormData)}
+                      type="number"
+                      placeholder={field.placeholder}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"
+                      style={{
+                        color: showValues ? 'white' : 'transparent',
+                        textShadow: showValues ? 'none' : '0 0 8px rgba(255,255,255,0.8)',
+                        caretColor: 'white'
+                      }}
+                    />
+                  </div>
+
+                  <div className="mt-2 text-xs text-slate-400 font-mono">
+                    {field.description}
+                  </div>
+
+                  {showValues && watchedValues[field.key as keyof FormData] && (
+                    <div className="mt-2 text-xs text-green-400 font-mono">
+                      {formatCurrency(Number(watchedValues[field.key as keyof FormData]))}
+                    </div>
+                  )}
+
+                  {errors[field.key as keyof FormData] && (
+                    <p className="text-red-400 text-sm mt-2 font-mono">
+                      {errors[field.key as keyof FormData]?.message}
+                    </p>
+                  )}
+
+                  {/* Tooltip */}
+                  <AnimatePresence>
+                    {showTooltip === field.key && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        className="absolute top-full left-0 right-0 mt-2 p-3 bg-slate-900/95 border border-slate-700 rounded-lg shadow-2xl z-50 backdrop-blur-xl"
+                      >
+                        <p className="text-sm text-slate-200 font-mono">
+                          {tooltips[field.key as keyof typeof tooltips]}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Skip Option */}
+          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <input
+                  type="checkbox"
+                  {...register("skipFinancials")}
+                  className="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <div>
+                  <label className="text-sm font-medium text-white font-mono">
+                    Skip financial details for now
+                  </label>
+                  <p className="text-xs text-slate-400 font-mono mt-1">
+                    You can add these later. We'll use industry averages for the initial valuation.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Navigation */}
-          <div className="flex space-x-4 pt-6">
-            <motion.button
+          <div className="flex justify-between pt-6">
+            <Button
               type="button"
+              variant="outline"
               onClick={onBack}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="wizard-button-secondary flex items-center space-x-2 px-6 py-3"
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white font-mono"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
-            </motion.button>
+              <TrendingDown className="w-4 h-4 mr-2 rotate-90" />
+              Back to Basics
+            </Button>
 
-            <motion.button
+            <Button
               type="submit"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="wizard-button-primary flex-1 py-3 text-lg font-semibold"
+              disabled={!isValid && !watchedValues.skipFinancials}
+              className={`px-8 py-3 rounded-lg font-medium transition-all font-mono ${
+                (isValid || watchedValues.skipFinancials)
+                  ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl"
+                  : "bg-slate-800 text-slate-500 cursor-not-allowed"
+              }`}
             >
-              → Next
-            </motion.button>
+              Continue to Market Traction
+              <ChevronDown className="w-4 h-4 ml-2 rotate-[-90deg]" />
+            </Button>
+          </div>
+
+          {/* Auto-save indicator */}
+          <div className="text-center">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 bg-slate-800/50 rounded-full text-xs text-slate-400 font-mono">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span>Auto-saved</span>
+            </div>
           </div>
         </form>
-
-        {/* Auto-save indicator */}
-        <div className="mt-4 text-center">
-          <p className="text-xs text-gray-500">
-            🔒 Your progress is automatically saved
-          </p>
-        </div>
       </motion.div>
     </div>
   );
