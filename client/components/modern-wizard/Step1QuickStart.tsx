@@ -90,6 +90,21 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showCountryDropdown) {
+        const target = event.target as Element;
+        if (!target.closest('.country-dropdown-container')) {
+          setShowCountryDropdown(false);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showCountryDropdown]);
+
   const {
     register,
     handleSubmit,
