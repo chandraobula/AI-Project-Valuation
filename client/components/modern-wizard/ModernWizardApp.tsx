@@ -26,6 +26,7 @@ const steps = [
 ];
 
 export function ModernWizardApp() {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [wizardData, setWizardData] = useState<WizardData>({});
   const [userID] = useState(
