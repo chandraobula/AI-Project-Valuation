@@ -249,7 +249,7 @@ export function Step3ProductTraction({ onNext, onBack, initialData, onSave }: St
           </div>
 
           {/* Growth Period */}
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm relative">
+          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm relative growth-dropdown-container">
             <CardContent className="p-6 relative">
               <div className="flex items-center space-x-3 mb-4">
                 <Calendar className="w-5 h-5 text-purple-400" />
