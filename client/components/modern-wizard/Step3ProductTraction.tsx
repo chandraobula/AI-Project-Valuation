@@ -105,6 +105,21 @@ export function Step3ProductTraction({ onNext, onBack, initialData, onSave }: St
   const [showGrowthPeriodDropdown, setShowGrowthPeriodDropdown] = useState(false);
   const [selectedAdvantages, setSelectedAdvantages] = useState<string[]>([]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showGrowthPeriodDropdown) {
+        const target = event.target as Element;
+        if (!target.closest('.growth-dropdown-container')) {
+          setShowGrowthPeriodDropdown(false);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showGrowthPeriodDropdown]);
+
   const {
     register,
     handleSubmit,
