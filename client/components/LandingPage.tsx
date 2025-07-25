@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence, useScroll, useTransform, useInView } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { 
   ArrowRight, Sparkles, BarChart3, TrendingUp, Shield, Zap, Brain, Target, Check, Star, Users, Rocket, Calculator,
-  ChevronDown, Play, Download, Terminal, Code, GitBranch, Database, Cpu, Activity
+  ChevronDown, Play, Download, Terminal, Code, X, AlertCircle, DollarSign, FileText, Eye, MessageCircle,
+  Briefcase, Building, BookOpen, Award, Clock, Lock, CheckCircle2, ChevronUp, HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface LandingPageProps {
   onStartWizard: () => void;
@@ -13,7 +16,8 @@ interface LandingPageProps {
 
 export function LandingPage({ onStartWizard }: LandingPageProps) {
   const [commandText, setCommandText] = useState("");
-  const [isTyping, setIsTyping] = useState(true);
+  const [pricingPeriod, setPricingPeriod] = useState<'monthly' | 'annual'>('monthly');
+  const [methodToggle, setMethodToggle] = useState<'beginner' | 'advanced'>('beginner');
   const fullCommand = "> ai valuation generate --doc --method=comprehensive --output=pdf";
   
   const heroRef = useRef<HTMLDivElement>(null);
@@ -23,7 +27,7 @@ export function LandingPage({ onStartWizard }: LandingPageProps) {
 
   // Typing animation for command line
   useEffect(() => {
-    if (commandText.length < fullCommand.length && isTyping) {
+    if (commandText.length < fullCommand.length) {
       const timeout = setTimeout(() => {
         setCommandText(fullCommand.slice(0, commandText.length + 1));
       }, 50 + Math.random() * 50);
@@ -31,63 +35,177 @@ export function LandingPage({ onStartWizard }: LandingPageProps) {
     } else if (commandText.length === fullCommand.length) {
       setTimeout(() => {
         setCommandText("");
-        setIsTyping(true);
       }, 3000);
     }
-  }, [commandText, isTyping, fullCommand]);
+  }, [commandText, fullCommand]);
 
-  const features = [
+  const problemPoints = [
     {
-      icon: Brain,
-      title: "AI-Powered Analysis",
-      description: "Advanced algorithms analyze your startup data with institutional-grade precision",
-      code: `const valuation = await ai.analyze({
-  financials: data.metrics,
-  market: data.sector,
-  stage: data.phase
-});`,
-      glow: "from-blue-500/20 to-cyan-500/20"
+      icon: X,
+      title: "No access to finance experts",
+      description: "Professional valuations cost thousands and take weeks to complete"
     },
     {
-      icon: BarChart3,
-      title: "Multi-Method Validation", 
-      description: "Cross-validate using DCF, Comparables, VC Method, and Risk Factor approaches",
-      code: `const methods = [
-  'dcf', 'comparables', 
-  'vc_method', 'risk_factor'
-];
-validate(methods);`,
-      glow: "from-purple-500/20 to-pink-500/20"
+      icon: X,
+      title: "Unclear how much equity to give",
+      description: "Founders struggle with equity decisions without knowing their worth"
     },
     {
-      icon: TrendingUp,
-      title: "Real-Time Benchmarking",
-      description: "Compare against 10,000+ startups in our proprietary database",
-      code: `benchmark.compare({
-  industry: 'saas',
-  stage: 'series_a',
-  metrics: userMetrics
-});`,
-      glow: "from-green-500/20 to-emerald-500/20"
+      icon: X,
+      title: "Can't justify numbers to investors",
+      description: "Lack credible data and methodology to support valuation claims"
     },
     {
-      icon: Shield,
-      title: "Enterprise Security",
-      description: "SOC2 compliant with end-to-end encryption and zero-trust architecture",
-      code: `security.encrypt({
-  data: sensitive_data,
-  level: 'enterprise',
-  compliance: 'soc2'
-});`,
-      glow: "from-orange-500/20 to-red-500/20"
+      icon: X,
+      title: "No credible report to show",
+      description: "Need professional documentation for fundraising and partnerships"
     }
   ];
 
-  const metrics = [
-    { value: "$2.4B+", label: "Total Valuations Generated", icon: DollarSign },
-    { value: "15,000+", label: "Startups Analyzed", icon: Rocket },
-    { value: "97%", label: "Investor Acceptance Rate", icon: TrendingUp },
-    { value: "< 5min", label: "Average Generation Time", icon: Clock }
+  const solutionFeatures = [
+    "Step-by-step valuation wizard",
+    "AI-powered method recommendations", 
+    "Investor-grade valuation reports",
+    "Built-in benchmarking"
+  ];
+
+  const howItWorksSteps = [
+    {
+      number: "01",
+      title: "Tell us about your startup",
+      description: "Business stage, industry, revenue",
+      icon: Target
+    },
+    {
+      number: "02", 
+      title: "Let the AI recommend methods",
+      description: "Berkus, DCF, Comparables, etc.",
+      icon: Brain
+    },
+    {
+      number: "03",
+      title: "Review your valuation insights", 
+      description: "Understand the analysis",
+      icon: Eye
+    },
+    {
+      number: "04",
+      title: "Download a professional report",
+      description: "PDF/Word/Excel-ready",
+      icon: Download
+    }
+  ];
+
+  const valuationMethods = [
+    {
+      name: "Berkus Method",
+      description: "Ideal for pre-revenue startups",
+      icon: Target,
+      beginner: true
+    },
+    {
+      name: "Scorecard Method", 
+      description: "Angel investor standard",
+      icon: Award,
+      beginner: true
+    },
+    {
+      name: "DCF Analysis",
+      description: "Discounted cash flow",
+      icon: BarChart3,
+      beginner: false
+    },
+    {
+      name: "VC Method",
+      description: "Venture capital approach",
+      icon: TrendingUp,
+      beginner: false
+    },
+    {
+      name: "Risk Factor",
+      description: "Risk-adjusted valuation",
+      icon: Shield,
+      beginner: false
+    },
+    {
+      name: "Comparable Analysis",
+      description: "Market-based valuation",
+      icon: Building,
+      beginner: true
+    }
+  ];
+
+  const targetPersonas = [
+    {
+      title: "Startup Founders",
+      description: "Get investor-ready valuations for fundraising rounds",
+      icon: Rocket,
+      testimonial: "Finally got a professional valuation without breaking the bank!"
+    },
+    {
+      title: "SME Owners", 
+      description: "Understand your business value for exit planning",
+      icon: Briefcase,
+      testimonial: "Perfect for planning our acquisition strategy."
+    },
+    {
+      title: "Angel Investors",
+      description: "Quick due diligence and portfolio valuation",
+      icon: DollarSign,
+      testimonial: "Saves me hours of analysis per deal."
+    },
+    {
+      title: "Accelerators / Incubators",
+      description: "Standardized valuations for your cohort",
+      icon: Building,
+      testimonial: "Essential tool for our program participants."
+    }
+  ];
+
+  const pricingPlans = [
+    {
+      name: "Free Trial",
+      price: { monthly: 0, annual: 0 },
+      description: "1 valuation",
+      features: [
+        "1 complete valuation",
+        "Basic AI recommendations", 
+        "PDF report download",
+        "Email support"
+      ],
+      cta: "Get Started for Free",
+      popular: false
+    },
+    {
+      name: "Founder Plan",
+      price: { monthly: 29, annual: 290 },
+      description: "For individual entrepreneurs", 
+      features: [
+        "Unlimited valuations",
+        "Advanced AI insights",
+        "Custom report branding",
+        "Priority support",
+        "Method explanations",
+        "Sensitivity analysis"
+      ],
+      cta: "Get Started",
+      popular: true
+    },
+    {
+      name: "Accelerator Pack",
+      price: { monthly: 199, annual: 1990 },
+      description: "Multi-startup management",
+      features: [
+        "Multi-startup management",
+        "Team collaboration tools", 
+        "White-label reports",
+        "API access",
+        "Dedicated support",
+        "Custom integrations"
+      ],
+      cta: "Contact Sales",
+      popular: false
+    }
   ];
 
   const testimonials = [
@@ -111,6 +229,29 @@ validate(methods);`,
     }
   ];
 
+  const faqs = [
+    {
+      question: "How accurate is the valuation?",
+      answer: "Our AI analyzes thousands of data points and comparable companies to provide valuations within industry-standard ranges. While no valuation is 100% precise, our methodology is used by professional investors and meets institutional standards."
+    },
+    {
+      question: "Do investors trust this report?",
+      answer: "Yes! Our reports follow established valuation methodologies (DCF, Comparables, VC Method, etc.) that are recognized by angels, VCs, and institutional investors worldwide."
+    },
+    {
+      question: "What happens if my startup has no revenue?",
+      answer: "We specialize in early-stage valuations! Our AI recommends pre-revenue methods like Berkus and Scorecard that focus on team, market size, product, and traction metrics."
+    },
+    {
+      question: "Can I edit or customize my report?",
+      answer: "Absolutely! You can customize assumptions, add commentary, include your branding, and export in multiple formats (PDF, Word, Excel) to meet your specific needs."
+    }
+  ];
+
+  const filteredMethods = valuationMethods.filter(method => 
+    methodToggle === 'beginner' ? method.beginner : !method.beginner
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
       {/* Navigation */}
@@ -131,20 +272,21 @@ validate(methods);`,
           
           <div className="hidden md:flex items-center space-x-8 text-sm font-mono">
             <a href="#features" className="text-slate-400 hover:text-white transition-colors">features</a>
+            <a href="#methods" className="text-slate-400 hover:text-white transition-colors">methods</a>
             <a href="#pricing" className="text-slate-400 hover:text-white transition-colors">pricing</a>
-            <a href="#docs" className="text-slate-400 hover:text-white transition-colors">docs</a>
+            <a href="#faq" className="text-slate-400 hover:text-white transition-colors">faq</a>
           </div>
 
           <Button 
             onClick={onStartWizard}
             className="bg-white text-black hover:bg-slate-100 font-mono text-sm px-6"
           >
-            launch_app()
+            Try the Valuation Wizard
           </Button>
         </div>
       </motion.nav>
 
-      {/* Hero Section */}
+      {/* 1. Hero Section */}
       <motion.section 
         ref={heroRef}
         style={{ opacity: heroOpacity, scale: heroScale }}
@@ -155,40 +297,13 @@ validate(methods);`,
           <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.1)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,black,transparent)]" />
         </div>
 
-        {/* Floating Code Elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          {[...Array(6)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute text-xs font-mono text-blue-400/30"
-              animate={{
-                y: [0, -20, 0],
-                opacity: [0.3, 0.7, 0.3],
-              }}
-              transition={{
-                duration: 4 + i,
-                repeat: Infinity,
-                delay: i * 0.8,
-              }}
-              style={{
-                left: `${10 + i * 15}%`,
-                top: `${20 + (i % 3) * 20}%`,
-              }}
-            >
-              {['npm install', 'git commit', 'docker build', 'yarn dev', 'pip install', 'go run'][i]}
-            </motion.div>
-          ))}
-        </div>
-
         <div className="max-w-6xl mx-auto text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            {/* Glow Effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-cyan-600/20 blur-3xl -z-10" />
-            
+            {/* Social Proof */}
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -197,22 +312,22 @@ validate(methods);`,
             >
               <span className="inline-flex items-center px-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-full text-sm font-mono text-blue-400">
                 <Sparkles className="w-4 h-4 mr-2" />
-                v2.0.0 • Now with real-time AI analysis
+                Trusted by: Y Combinator | 500 Startups | Techstars
               </span>
             </motion.div>
 
             <motion.h1 
-              className="text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-tight"
+              className="text-4xl md:text-6xl lg:text-7xl font-bold mb-8 leading-tight"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.8 }}
             >
               <span className="bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent">
-                Startup Valuation,
+                Know Your Startup's Worth
               </span>
               <br />
               <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent font-mono">
-                Redefined.
+                in Minutes – Backed by AI
               </span>
             </motion.h1>
 
@@ -222,9 +337,7 @@ validate(methods);`,
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.8 }}
             >
-              Generate investor-grade valuations in minutes, not months.
-              <br />
-              Powered by AI that understands your business.
+              Investor-ready valuation reports using global methodologies, powered by artificial intelligence.
             </motion.p>
 
             {/* Command Line Demo */}
@@ -264,7 +377,7 @@ validate(methods);`,
                 onClick={onStartWizard}
                 className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-4 text-lg font-mono shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all"
               >
-                start_valuation()
+                Get Started for Free
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
               <Button 
@@ -273,32 +386,8 @@ validate(methods);`,
                 className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white px-8 py-4 text-lg font-mono"
               >
                 <Play className="mr-2 w-5 h-5" />
-                watch_demo()
+                Watch Demo
               </Button>
-            </motion.div>
-
-            {/* Metrics */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2, duration: 0.8 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto"
-            >
-              {[
-                { value: "$2.4B+", label: "valuations" },
-                { value: "15k+", label: "startups" },
-                { value: "97%", label: "accuracy" },
-                { value: "<5min", label: "generation" }
-              ].map((metric, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-2xl md:text-3xl font-bold font-mono text-blue-400">
-                    {metric.value}
-                  </div>
-                  <div className="text-sm text-slate-500 font-mono">
-                    {metric.label}
-                  </div>
-                </div>
-              ))}
             </motion.div>
           </motion.div>
         </div>
@@ -313,62 +402,47 @@ validate(methods);`,
         </motion.div>
       </motion.section>
 
-      {/* Features Section with Code Previews */}
-      <section className="py-32 px-6">
+      {/* 2. Problem Section */}
+      <section className="py-32 px-6 bg-slate-900/30">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-20"
+            className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-6xl font-bold mb-6 font-mono">
-              <span className="bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                Built for
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                Developers
-              </span>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-mono">
+              Valuing a Startup Shouldn't Be a Guessing Game
             </h2>
-            <p className="text-xl text-slate-400 font-mono max-w-2xl mx-auto">
-              API-first platform with the tools you expect
+            <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+              Most founders struggle with valuation challenges that cost time, money, and credibility with investors
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            {features.map((feature, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {problemPoints.map((problem, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 50 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.2 }}
+                transition={{ delay: index * 0.1 }}
                 className="group"
               >
-                <Card className="bg-slate-900/50 border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 backdrop-blur-sm overflow-hidden">
+                <Card className="bg-slate-900/50 border-red-800/30 hover:border-red-600/50 transition-all backdrop-blur-sm h-full">
                   <CardContent className="p-8">
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 bg-gradient-to-br ${feature.glow} rounded-lg flex items-center justify-center border border-slate-700/50`}>
-                          <feature.icon className="w-6 h-6 text-blue-400" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-white mb-2 font-mono">
-                            {feature.title}
-                          </h3>
-                          <p className="text-slate-400 text-sm">
-                            {feature.description}
-                          </p>
-                        </div>
+                    <div className="flex items-start space-x-4">
+                      <div className="w-12 h-12 bg-red-900/30 border border-red-800/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <problem.icon className="w-6 h-6 text-red-400" />
                       </div>
-                    </div>
-                    
-                    {/* Code Preview */}
-                    <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-4 group-hover:border-blue-800/50 transition-all">
-                      <pre className="text-sm font-mono text-slate-300 overflow-x-auto">
-                        <code>{feature.code}</code>
-                      </pre>
+                      <div>
+                        <h3 className="text-xl font-bold text-white mb-3 font-mono">
+                          🚫 {problem.title}
+                        </h3>
+                        <p className="text-slate-400 leading-relaxed">
+                          {problem.description}
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -378,18 +452,562 @@ validate(methods);`,
         </div>
       </section>
 
-      {/* Testimonials Slider */}
+      {/* 3. Solution Section */}
+      <section className="py-32 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ x: -30, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-8 font-mono">
+                Meet Your AI Co-Pilot for
+                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent"> Startup Valuation</span>
+              </h2>
+              
+              <p className="text-xl text-slate-400 mb-8 leading-relaxed">
+                Transform weeks of complex analysis into minutes with our AI-powered platform. 
+                Get professional-grade valuations that investors trust and understand.
+              </p>
+
+              <div className="space-y-4 mb-8">
+                {solutionFeatures.map((feature, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ x: -20, opacity: 0 }}
+                    whileInView={{ x: 0, opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.1 }}
+                    className="flex items-center space-x-3"
+                  >
+                    <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0" />
+                    <span className="text-lg text-slate-300 font-mono">✅ {feature}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ x: 30, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              {/* Tool Mockup */}
+              <div className="relative bg-slate-900/80 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+                <div className="bg-slate-800 p-4 border-b border-slate-700/50">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="ml-4 text-sm text-slate-400 font-mono">valuation-wizard.ai</span>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm">1</span>
+                      </div>
+                      <span className="text-slate-300 font-mono">Business basics collected ✓</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm">2</span>
+                      </div>
+                      <span className="text-slate-300 font-mono">Financial data analyzed ✓</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm">3</span>
+                      </div>
+                      <span className="text-slate-300 font-mono">AI generating report...</span>
+                    </div>
+                  </div>
+                  <div className="mt-6 p-4 bg-slate-950/50 rounded-lg">
+                    <div className="text-sm font-mono text-green-400">
+                      Estimated Valuation: $1.2M - $1.8M
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      95% confidence • Berkus Method recommended
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. How It Works */}
+      <section className="py-32 px-6 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-mono">
+              Simple Process, Professional Results
+            </h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+              Our AI-guided wizard makes professional startup valuation accessible to everyone
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {howItWorksSteps.map((step, index) => (
+              <motion.div
+                key={index}
+                initial={{ y: 30, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="relative text-center"
+              >
+                <Card className="bg-slate-900/50 border-slate-700/50 hover:border-blue-500/50 transition-all backdrop-blur-sm h-full">
+                  <CardContent className="p-8">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                      <step.icon className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="text-sm font-bold text-blue-400 dark:text-blue-400 mb-2 font-mono">
+                      STEP {step.number}
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-3 font-mono">
+                      {step.title}
+                    </h3>
+                    <p className="text-slate-400">
+                      {step.description}
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                {index < howItWorksSteps.length - 1 && (
+                  <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2">
+                    <ArrowRight className="w-6 h-6 text-blue-400" />
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Supported Valuation Methods */}
+      <section id="methods" className="py-32 px-6">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-mono">
+              Powered by Global Standards
+            </h2>
+            <p className="text-xl text-slate-400 max-w-3xl mx-auto mb-8">
+              Our AI uses established methodologies trusted by investors worldwide
+            </p>
+            
+            <div className="flex justify-center">
+              <div className="bg-slate-900/80 border border-slate-700/50 rounded-full p-1 shadow-lg">
+                <div className="flex">
+                  <button 
+                    onClick={() => setMethodToggle('beginner')}
+                    className={`px-6 py-2 rounded-full font-medium transition-all font-mono ${
+                      methodToggle === 'beginner' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    Beginner Friendly
+                  </button>
+                  <button 
+                    onClick={() => setMethodToggle('advanced')}
+                    className={`px-6 py-2 rounded-full font-medium transition-all font-mono ${
+                      methodToggle === 'advanced' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    Advanced Finance
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredMethods.map((method, index) => (
+              <motion.div
+                key={method.name}
+                initial={{ y: 30, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="group"
+              >
+                <Card className="bg-slate-900/50 border-slate-700/50 hover:border-blue-500/50 transition-all backdrop-blur-sm h-full">
+                  <CardContent className="p-8 text-center">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                      <method.icon className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-3 font-mono">
+                      {method.name}
+                    </h3>
+                    <p className="text-slate-400 mb-4">
+                      {method.description}
+                    </p>
+                    <Badge variant={method.beginner ? "default" : "secondary"} className="font-mono">
+                      {method.beginner ? "Beginner" : "Advanced"}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 6. AI Intelligence Section */}
+      <section className="py-32 px-6 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-mono">
+              Smarter Valuations with AI Insights
+            </h2>
+            <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+              Get confidence intervals, benchmarking, and detailed methodology explanations
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ x: -30, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+            >
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-blue-900/30 border border-blue-800/50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Brain className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-2 font-mono">
+                      Confidence scoring + sensitivity range
+                    </h3>
+                    <p className="text-slate-400">
+                      Get confidence intervals and understand how key variables affect your valuation
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-green-900/30 border border-green-800/50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-6 h-6 text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-2 font-mono">
+                      Benchmark against startups in the same vertical
+                    </h3>
+                    <p className="text-slate-400">
+                      Compare your valuation to startups in the same vertical and stage
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-purple-900/30 border border-purple-800/50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-2 font-mono">
+                      Justification for each method chosen
+                    </h3>
+                    <p className="text-slate-400">
+                      Understand why the AI chose specific methods for your startup
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ x: 30, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-center font-mono text-white">AI Valuation Dashboard</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-slate-300 font-mono">Valuation Range</span>
+                      <span className="text-sm text-slate-500 font-mono">95% confidence</span>
+                    </div>
+                    <div className="text-3xl font-bold text-blue-400 mb-2 font-mono">$1.2M – $1.8M</div>
+                    <div className="w-full bg-slate-700 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 h-2 rounded-full w-3/4"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-3 text-white font-mono">Top 3 comparable startups</h4>
+                    <div className="space-y-2">
+                      {["TechCorp", "StartupAI", "InnovateCo"].map((company, index) => (
+                        <div key={index} className="flex justify-between items-center py-2 border-b border-slate-700">
+                          <span className="text-sm text-slate-300 font-mono">{company}</span>
+                          <span className="text-sm font-medium text-slate-200 font-mono">${(1.5 + index * 0.2).toFixed(1)}M</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-3 text-white font-mono">Justification for each method chosen</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-green-400 font-mono">Berkus</div>
+                        <div className="text-xs text-slate-500 font-mono">Primary</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-blue-400 font-mono">Scorecard</div>
+                        <div className="text-xs text-slate-500 font-mono">Secondary</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Sample Report Preview */}
+      <section className="py-32 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-mono">
+              See What You'll Get
+            </h2>
+            <p className="text-xl text-slate-400 mb-12">
+              Professional, investor-ready reports that build credibility and trust
+            </p>
+
+            <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl max-w-2xl mx-auto">
+              <CardContent className="p-8">
+                <div className="aspect-[4/5] bg-slate-800 rounded-lg flex items-center justify-center mb-6 border border-slate-700/50">
+                  <div className="text-center">
+                    <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                    <div className="text-lg font-semibold text-white font-mono">Sample Valuation Report</div>
+                    <div className="text-sm text-slate-400 font-mono">Interactive Preview</div>
+                  </div>
+                </div>
+                
+                <div className="text-center mb-6">
+                  <Badge className="bg-green-900/30 border border-green-800/50 text-green-400 font-mono">
+                    Investor-ready. Shareable. Credible.
+                  </Badge>
+                </div>
+
+                <Button size="lg" variant="outline" className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 font-mono">
+                  <Download className="w-5 h-5 mr-2" />
+                  Download Sample Report
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 8. Who It's For */}
+      <section className="py-32 px-6 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-mono">
+              Built for Everyone in the Ecosystem
+            </h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+              From first-time founders to experienced investors, our platform serves the entire startup community
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {targetPersonas.map((persona, index) => (
+              <motion.div
+                key={index}
+                initial={{ y: 30, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="group"
+              >
+                <Card className="bg-slate-900/50 border-slate-700/50 hover:border-blue-500/50 transition-all backdrop-blur-sm h-full">
+                  <CardContent className="p-8 text-center">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                      <persona.icon className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-3 font-mono">
+                      {persona.title}
+                    </h3>
+                    <p className="text-slate-400 mb-6">
+                      {persona.description}
+                    </p>
+                    <blockquote className="text-sm italic text-slate-500 border-l-4 border-blue-500/30 pl-4 font-mono">
+                      "{persona.testimonial}"
+                    </blockquote>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 9. Pricing Section */}
+      <section id="pricing" className="py-32 px-6">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-mono">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-8">
+              Choose the plan that fits your needs. Upgrade or downgrade anytime.
+            </p>
+            
+            <div className="flex justify-center mb-8">
+              <div className="bg-slate-900/80 border border-slate-700/50 rounded-full p-1 shadow-lg">
+                <div className="flex">
+                  <button 
+                    onClick={() => setPricingPeriod('monthly')}
+                    className={`px-6 py-2 rounded-full font-medium transition-all font-mono ${
+                      pricingPeriod === 'monthly' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                  <button 
+                    onClick={() => setPricingPeriod('annual')}
+                    className={`px-6 py-2 rounded-full font-medium transition-all font-mono ${
+                      pricingPeriod === 'annual' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    Annual <Badge className="ml-2 font-mono">Save 17%</Badge>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {pricingPlans.map((plan, index) => (
+              <motion.div
+                key={index}
+                initial={{ y: 30, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className={`relative ${plan.popular ? 'scale-105' : ''}`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-blue-600 text-white px-6 py-1 font-mono">Most Popular</Badge>
+                  </div>
+                )}
+                <Card className={`h-full ${
+                  plan.popular 
+                    ? 'border-2 border-blue-500 shadow-xl bg-slate-900/80' 
+                    : 'border border-slate-700/50 bg-slate-900/50'
+                } backdrop-blur-sm transition-all hover:shadow-xl`}>
+                  <CardContent className="p-8">
+                    <div className="text-center mb-8">
+                      <h3 className="text-2xl font-bold text-white mb-2 font-mono">
+                        {plan.name}
+                      </h3>
+                      <p className="text-slate-400 mb-6 font-mono">
+                        {plan.description}
+                      </p>
+                      <div className="mb-6">
+                        <span className="text-4xl font-bold text-white font-mono">
+                          ${plan.price[pricingPeriod]}
+                        </span>
+                        <span className="text-slate-400 font-mono">
+                          /{pricingPeriod === 'monthly' ? 'mo' : 'yr'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <ul className="space-y-4 mb-8">
+                      {plan.features.map((feature, featureIndex) => (
+                        <li key={featureIndex} className="flex items-start space-x-3">
+                          <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                          <span className="text-slate-300 font-mono text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Button 
+                      onClick={plan.name === 'Free Trial' ? onStartWizard : undefined}
+                      className={`w-full font-mono ${
+                        plan.popular 
+                          ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white'
+                          : 'border border-slate-600 text-slate-300 hover:bg-slate-700'
+                      }`}
+                      variant={plan.popular ? 'default' : 'outline'}
+                    >
+                      {plan.cta}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 10. Testimonials / Logos / Case Studies */}
       <section className="py-32 px-6 bg-slate-900/30">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-20"
+            className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 font-mono text-white">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-mono">
               Trusted by <span className="text-blue-400">builders</span>
             </h2>
+            <p className="text-xl text-slate-400 mb-8">
+              Over $40M worth of startups valued using our tool.
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -427,47 +1045,83 @@ validate(methods);`,
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-32 px-6">
-        <div className="max-w-4xl mx-auto text-center">
+      {/* 11. FAQ Section */}
+      <section id="faq" className="py-32 px-6">
+        <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-6xl font-bold mb-8 font-mono">
-              <span className="bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                Ship faster with
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                confidence
-              </span>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-mono">
+              Frequently Asked Questions
             </h2>
-            
-            <p className="text-xl text-slate-400 mb-12 font-mono">
-              Join 15,000+ startups using valuation.ai
+            <p className="text-xl text-slate-400">
+              Everything you need to know about our platform
+            </p>
+          </motion.div>
+
+          <Accordion type="single" collapsible className="space-y-4">
+            {faqs.map((faq, index) => (
+              <motion.div
+                key={index}
+                initial={{ y: 20, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <AccordionItem 
+                  value={`item-${index}`} 
+                  className="bg-slate-900/50 border border-slate-700/50 rounded-lg px-6"
+                >
+                  <AccordionTrigger className="text-left hover:no-underline py-6">
+                    <span className="text-lg font-semibold text-white font-mono">
+                      {faq.question}
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="text-slate-300 pb-6 font-mono">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              </motion.div>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
+      {/* 12. Final CTA Section */}
+      <section className="py-32 px-6 bg-gradient-to-r from-slate-900 via-blue-900/20 to-slate-900">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 font-mono">
+              Start Your Valuation Journey Today
+            </h2>
+            <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto">
+              Join thousands of founders who've already discovered their startup's true worth
             </p>
             
-            <div className="space-y-4">
-              <Button 
-                size="lg" 
-                onClick={onStartWizard}
-                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-12 py-6 text-xl font-mono shadow-2xl hover:shadow-blue-500/25 transform hover:-translate-y-1 transition-all"
-              >
-                npm install @valuation/ai
-                <ArrowRight className="ml-3 w-6 h-6" />
-              </Button>
-              
-              <div className="text-slate-500 text-sm font-mono">
-                Free tier • No credit card • Deploy in 30 seconds
-              </div>
+            <Button 
+              size="lg" 
+              onClick={onStartWizard}
+              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-12 py-6 text-xl font-mono shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all"
+            >
+              Launch Free Valuation
+              <Rocket className="ml-3 w-6 h-6" />
+            </Button>
+
+            <div className="mt-8 text-slate-400 text-sm font-mono">
+              No credit card required • Get results in minutes • Trusted by 10,000+ startups
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Footer */}
+      {/* 13. Footer */}
       <footer className="border-t border-slate-800 py-16 px-6 bg-slate-950/50">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
@@ -487,29 +1141,27 @@ validate(methods);`,
               <div className="flex items-center space-x-4 text-xs font-mono text-slate-500">
                 <span>SOC2 Type II</span>
                 <span>•</span>
-                <span>ISO 27001</span>
-                <span>•</span>
                 <span>GDPR Ready</span>
               </div>
             </div>
             
             <div>
-              <h4 className="text-white font-mono font-semibold mb-4 text-sm">Product</h4>
+              <h4 className="text-white font-mono font-semibold mb-4 text-sm">Resources</h4>
               <ul className="space-y-3 text-slate-400 text-sm font-mono">
-                <li><a href="#" className="hover:text-white transition-colors">API Reference</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Documentation</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">SDKs</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Webhooks</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Docs</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">About</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="text-white font-mono font-semibold mb-4 text-sm">Resources</h4>
+              <h4 className="text-white font-mono font-semibold mb-4 text-sm">Legal</h4>
               <ul className="space-y-3 text-slate-400 text-sm font-mono">
-                <li><a href="#" className="hover:text-white transition-colors">GitHub</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Discord</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Privacy</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Terms</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Status</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Changelog</a></li>
               </ul>
             </div>
           </div>
@@ -519,9 +1171,12 @@ validate(methods);`,
               © 2024 valuation.ai • All rights reserved
             </div>
             <div className="flex items-center space-x-6 text-slate-500 text-sm font-mono">
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
-              <a href="#" className="hover:text-white transition-colors">Security</a>
+              <span>Newsletter subscription</span>
+              <input 
+                type="email" 
+                placeholder="your@email.com"
+                className="bg-slate-900 border border-slate-700 rounded px-3 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
             </div>
           </div>
         </div>
@@ -529,6 +1184,3 @@ validate(methods);`,
     </div>
   );
 }
-
-// Add missing import for DollarSign and Clock icons
-import { DollarSign, Clock } from "lucide-react";
