@@ -5,18 +5,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   Brain,
-  ArrowLeft,
   Upload,
   FileText,
   Link,
   CheckCircle,
   X,
-  AlertCircle,
   Loader2,
   ExternalLink,
   Globe,
   Paperclip,
+  ChevronDown,
+  Sparkles
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { FileUpload } from "../FileUpload";
 import { UploadResponse } from "@/lib/api";
 
@@ -48,39 +50,38 @@ interface Step4Props {
   onBack: () => void;
   initialData?: Partial<FormData>;
   onSave?: (data: Partial<FormData>) => void;
-  userID: string;
 }
 
-const fileTypes = [
+const urlFields = [
   {
-    type: "pitchDeck",
-    label: "Pitch Deck",
-    icon: "📊",
-    description: "PDF or PPTX presentation",
-    accept: ".pdf,.pptx,.ppt",
-    maxSize: "10MB",
+    key: "websiteUrl",
+    label: "Company Website",
+    placeholder: "https://yourcompany.com",
+    icon: Globe,
+    color: "text-blue-400",
+    description: "Your main company website"
   },
   {
-    type: "financialModel",
-    label: "Financial Model",
-    icon: "📈",
-    description: "Excel spreadsheet with projections",
-    accept: ".xlsx,.xls,.csv",
-    maxSize: "5MB",
+    key: "linkedinUrl", 
+    label: "LinkedIn Company Page",
+    placeholder: "https://linkedin.com/company/yourcompany",
+    icon: ExternalLink,
+    color: "text-cyan-400",
+    description: "LinkedIn company profile"
   },
+  {
+    key: "crunchbaseUrl",
+    label: "Crunchbase Profile", 
+    placeholder: "https://crunchbase.com/organization/yourcompany",
+    icon: ExternalLink,
+    color: "text-green-400",
+    description: "Crunchbase company profile"
+  }
 ];
 
-export function Step4AIExtras({
-  onNext,
-  onBack,
-  initialData,
-  onSave,
-  userID,
-}: Step4Props) {
-  const [skipMode, setSkipMode] = useState(initialData?.skipExtras || false);
+export function Step4AIExtras({ onNext, onBack, initialData, onSave }: Step4Props) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadResponse[]>([]);
-  const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
-  const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const {
     register,
@@ -91,6 +92,8 @@ export function Step4AIExtras({
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      pitchDeck: initialData?.pitchDeck || undefined,
+      financialModel: initialData?.financialModel || undefined,
       linkedinUrl: initialData?.linkedinUrl || "",
       crunchbaseUrl: initialData?.crunchbaseUrl || "",
       websiteUrl: initialData?.websiteUrl || "",
@@ -110,456 +113,299 @@ export function Step4AIExtras({
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [watchedValues, onSave]);
+  }, [watchedValues.linkedinUrl, watchedValues.crunchbaseUrl, watchedValues.websiteUrl, watchedValues.skipExtras, onSave]);
 
-  const handleFileUploadSuccess = (
-    result: UploadResponse,
-    fileType: string,
-  ) => {
-    setUploadedFiles((prev) => [...prev, { ...result, fileType }]);
-    setUploadingFiles((prev) => prev.filter((f) => f !== fileType));
-    setUploadErrors((prev) => ({ ...prev, [fileType]: "" }));
+  const onSubmit = async (data: FormData) => {
+    setIsAnalyzing(true);
+    
+    // Simulate AI analysis delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    onNext({
+      ...data,
+      uploadedFiles
+    });
   };
 
-  const handleFileUploadError = (error: string, fileType: string) => {
-    setUploadErrors((prev) => ({ ...prev, [fileType]: error }));
-    setUploadingFiles((prev) => prev.filter((f) => f !== fileType));
+  const handleFileUpload = (file: UploadResponse) => {
+    setUploadedFiles(prev => [...prev, file]);
   };
 
-  const handleFileUploadStart = (fileType: string) => {
-    setUploadingFiles((prev) => [...prev, fileType]);
-    setUploadErrors((prev) => ({ ...prev, [fileType]: "" }));
-  };
-
-  const removeUploadedFile = (index: number) => {
-    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const onSubmit = (data: FormData) => {
-    if (skipMode) {
-      onNext({ ...data, skipExtras: true, uploadedFiles: [] });
-    } else {
-      onNext({ ...data, uploadedFiles });
-    }
-  };
-
-  const handleSkipToggle = () => {
-    setSkipMode(!skipMode);
-    setValue("skipExtras", !skipMode);
-  };
-
-  const extractDomainFromUrl = (url: string) => {
-    try {
-      const domain = new URL(url).hostname;
-      return domain.replace("www.", "");
-    } catch {
-      return url;
-    }
-  };
-
-  const validateUrl = (url: string, type: string) => {
-    if (!url) return true;
-
-    try {
-      const urlObj = new URL(url);
-      switch (type) {
-        case "linkedin":
-          return urlObj.hostname.includes("linkedin.com");
-        case "crunchbase":
-          return urlObj.hostname.includes("crunchbase.com");
-        default:
-          return true;
-      }
-    } catch {
-      return false;
-    }
+  const removeFile = (fileId: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4">
+    <div className="max-w-4xl mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="wizard-card p-8"
       >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4"
-          >
-            <Brain className="w-8 h-8 text-white" />
-          </motion.div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🧠 Upload files or links to boost accuracy
-          </h1>
-          <p className="text-gray-600">
-            Optional but recommended - helps our AI provide more precise
-            valuations
-          </p>
-        </div>
-
-        {/* Skip Option */}
-        <div className="mb-8 p-4 bg-indigo-50 border border-indigo-200 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-indigo-800">
-                Want to skip the extras?
-              </p>
-              <p className="text-xs text-indigo-700">
-                We can generate your valuation with the info you've already
-                provided
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleSkipToggle}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                skipMode
-                  ? "bg-indigo-200 text-indigo-800"
-                  : "bg-white text-indigo-700 border border-indigo-200"
-              }`}
-            >
-              {skipMode ? "Add Details" : "Skip This Step"}
-            </button>
-          </div>
-        </div>
-
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          <AnimatePresence>
-            {!skipMode && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-8"
-              >
-                {/* File Uploads */}
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-2">
-                    <Upload className="w-5 h-5 text-indigo-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Upload Documents
-                    </h3>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {fileTypes.map((fileType) => (
-                      <div key={fileType.type} className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-2xl">{fileType.icon}</span>
-                            <div>
-                              <p className="font-medium text-gray-900">
-                                {fileType.label}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                {fileType.description}
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                            {fileType.maxSize}
-                          </span>
-                        </div>
-
-                        <div className="border-2 border-dashed border-gray-200 rounded-2xl p-6 hover:border-indigo-300 transition-colors">
-                          {uploadingFiles.includes(fileType.type) ? (
-                            <div className="text-center">
-                              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-2" />
-                              <p className="text-sm text-gray-600">
-                                Uploading {fileType.label}...
-                              </p>
-                            </div>
-                          ) : uploadedFiles.find(
-                              (f) => f.fileType === fileType.type,
-                            ) ? (
-                            <div className="text-center">
-                              <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                              <p className="text-sm font-medium text-green-800">
-                                {fileType.label} uploaded successfully
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const index = uploadedFiles.findIndex(
-                                    (f) => f.fileType === fileType.type,
-                                  );
-                                  if (index !== -1) removeUploadedFile(index);
-                                }}
-                                className="text-xs text-red-600 hover:text-red-800 mt-1"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="text-center">
-                              <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                              <p className="text-sm text-gray-600 mb-2">
-                                Drop your {fileType.label.toLowerCase()} here
-                              </p>
-                              <input
-                                type="file"
-                                accept={fileType.accept}
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    handleFileUploadStart(fileType.type);
-                                    // Simulate file upload for now
-                                    setTimeout(() => {
-                                      handleFileUploadSuccess(
-                                        {
-                                          bucket: "demo-bucket",
-                                          key: `demo/${file.name}`,
-                                          message: "File uploaded successfully",
-                                        },
-                                        fileType.type,
-                                      );
-                                    }, 2000);
-                                  }
-                                }}
-                                className="hidden"
-                                id={`file-${fileType.type}`}
-                              />
-                              <label
-                                htmlFor={`file-${fileType.type}`}
-                                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
-                              >
-                                <Paperclip className="w-4 h-4 mr-2" />
-                                Choose File
-                              </label>
-                            </div>
-                          )}
-
-                          {uploadErrors[fileType.type] && (
-                            <motion.div
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className="mt-3 flex items-center space-x-2 text-red-600"
-                            >
-                              <AlertCircle className="w-4 h-4" />
-                              <span className="text-sm">
-                                {uploadErrors[fileType.type]}
-                              </span>
-                            </motion.div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+          {/* AI Enhancement Header */}
+          <Card className="bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-cyan-900/20 border-blue-500/30 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <Brain className="w-6 h-6 text-white" />
                 </div>
-
-                {/* URL Links */}
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-2">
-                    <Link className="w-5 h-5 text-indigo-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Company Links
-                    </h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    {/* LinkedIn URL */}
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-900">
-                        <Globe className="w-4 h-4 text-blue-600" />
-                        <span>LinkedIn Company Page</span>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          Optional
-                        </span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          {...register("linkedinUrl")}
-                          type="url"
-                          placeholder="https://linkedin.com/company/your-company"
-                          className="wizard-input w-full pr-10"
-                        />
-                        {watchedValues.linkedinUrl &&
-                          validateUrl(
-                            watchedValues.linkedinUrl,
-                            "linkedin",
-                          ) && (
-                            <a
-                              href={watchedValues.linkedinUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          )}
-                      </div>
-                      {errors.linkedinUrl && (
-                        <motion.p
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="text-sm text-red-500"
-                        >
-                          {errors.linkedinUrl.message}
-                        </motion.p>
-                      )}
-                    </div>
-
-                    {/* Crunchbase URL */}
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-900">
-                        <Globe className="w-4 h-4 text-orange-600" />
-                        <span>Crunchbase Profile</span>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          Optional
-                        </span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          {...register("crunchbaseUrl")}
-                          type="url"
-                          placeholder="https://crunchbase.com/organization/your-company"
-                          className="wizard-input w-full pr-10"
-                        />
-                        {watchedValues.crunchbaseUrl &&
-                          validateUrl(
-                            watchedValues.crunchbaseUrl,
-                            "crunchbase",
-                          ) && (
-                            <a
-                              href={watchedValues.crunchbaseUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          )}
-                      </div>
-                      {errors.crunchbaseUrl && (
-                        <motion.p
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="text-sm text-red-500"
-                        >
-                          {errors.crunchbaseUrl.message}
-                        </motion.p>
-                      )}
-                    </div>
-
-                    {/* Website URL */}
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-2 text-sm font-medium text-gray-900">
-                        <Globe className="w-4 h-4 text-green-600" />
-                        <span>Company Website</span>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          Optional
-                        </span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          {...register("websiteUrl")}
-                          type="url"
-                          placeholder="https://your-company.com"
-                          className="wizard-input w-full pr-10"
-                        />
-                        {watchedValues.websiteUrl && (
-                          <a
-                            href={watchedValues.websiteUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                        )}
-                      </div>
-                      {errors.websiteUrl && (
-                        <motion.p
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="text-sm text-red-500"
-                        >
-                          {errors.websiteUrl.message}
-                        </motion.p>
-                      )}
-                    </div>
-                  </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-mono">AI-Powered Enhancement</h3>
+                  <p className="text-sm text-slate-300 font-mono">
+                    Upload documents and links for deeper analysis and more accurate valuations
+                  </p>
                 </div>
-
-                {/* Info Box */}
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
-                  <div className="flex items-start space-x-3">
-                    <Brain className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-blue-800">
-                        How this helps
-                      </p>
-                      <p className="text-sm text-blue-700">
-                        Our AI analyzes your documents and profiles to
-                        understand your business model, market positioning, and
-                        growth trajectory for more accurate valuations.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {skipMode && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-8"
-            >
-              <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Brain className="w-6 h-6 text-indigo-600" />
               </div>
-              <p className="text-gray-600">
-                No problem! We'll generate your valuation with the information
-                you've provided.
-              </p>
-            </motion.div>
-          )}
+            </CardContent>
+          </Card>
+
+          {/* File Uploads */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Pitch Deck Upload */}
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <FileText className="w-5 h-5 text-purple-400" />
+                  <label className="text-sm font-medium text-white font-mono">
+                    Pitch Deck
+                  </label>
+                  {uploadedFiles.some(f => f.type === 'pitch-deck') && (
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  )}
+                </div>
+                
+                <FileUpload
+                  onFileUpload={handleFileUpload}
+                  fileType="pitch-deck"
+                  accept=".pdf,.ppt,.pptx"
+                  className="border-dashed border-2 border-slate-700 hover:border-blue-500 transition-colors"
+                />
+                
+                <div className="mt-2 text-xs text-slate-400 font-mono">
+                  PDF or PowerPoint format • Max 10MB
+                </div>
+
+                {/* Uploaded Files Display */}
+                {uploadedFiles.filter(f => f.type === 'pitch-deck').map((file) => (
+                  <motion.div
+                    key={file.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mt-3 flex items-center justify-between p-3 bg-slate-800/50 rounded-lg"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <FileText className="w-4 h-4 text-purple-400" />
+                      <span className="text-sm text-white font-mono">{file.filename}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(file.id)}
+                      className="text-slate-400 hover:text-red-400 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Financial Model Upload */}
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Paperclip className="w-5 h-5 text-green-400" />
+                  <label className="text-sm font-medium text-white font-mono">
+                    Financial Model
+                  </label>
+                  {uploadedFiles.some(f => f.type === 'financial-model') && (
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  )}
+                </div>
+                
+                <FileUpload
+                  onFileUpload={handleFileUpload}
+                  fileType="financial-model"
+                  accept=".xlsx,.xls,.csv"
+                  className="border-dashed border-2 border-slate-700 hover:border-green-500 transition-colors"
+                />
+                
+                <div className="mt-2 text-xs text-slate-400 font-mono">
+                  Excel or CSV format • Max 5MB
+                </div>
+
+                {/* Uploaded Files Display */}
+                {uploadedFiles.filter(f => f.type === 'financial-model').map((file) => (
+                  <motion.div
+                    key={file.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mt-3 flex items-center justify-between p-3 bg-slate-800/50 rounded-lg"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Paperclip className="w-4 h-4 text-green-400" />
+                      <span className="text-sm text-white font-mono">{file.filename}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(file.id)}
+                      className="text-slate-400 hover:text-red-400 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* URLs Section */}
+          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-3 mb-6">
+                <Link className="w-5 h-5 text-cyan-400" />
+                <label className="text-lg font-medium text-white font-mono">
+                  Company Links
+                </label>
+              </div>
+
+              <div className="space-y-6">
+                {urlFields.map((field) => (
+                  <div key={field.key}>
+                    <div className="flex items-center space-x-3 mb-3">
+                      <field.icon className={`w-4 h-4 ${field.color}`} />
+                      <label className="text-sm font-medium text-white font-mono">
+                        {field.label}
+                      </label>
+                      {watchedValues[field.key as keyof FormData] && (
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                      )}
+                    </div>
+                    <input
+                      {...register(field.key as keyof FormData)}
+                      type="url"
+                      placeholder={field.placeholder}
+                      className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"
+                    />
+                    <div className="mt-1 text-xs text-slate-400 font-mono">
+                      {field.description}
+                    </div>
+                    {errors[field.key as keyof FormData] && (
+                      <p className="text-red-400 text-sm mt-1 font-mono">
+                        {errors[field.key as keyof FormData]?.message}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Skip Option */}
+          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <input
+                  type="checkbox"
+                  {...register("skipExtras")}
+                  className="w-4 h-4 bg-slate-800 border-slate-700 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <div>
+                  <label className="text-sm font-medium text-white font-mono">
+                    Skip AI enhancements for now
+                  </label>
+                  <p className="text-xs text-slate-400 font-mono mt-1">
+                    Generate basic valuation without additional document analysis.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Navigation */}
-          <div className="flex space-x-4 pt-6">
-            <motion.button
+          <div className="flex justify-between pt-6">
+            <Button
               type="button"
+              variant="outline"
               onClick={onBack}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="wizard-button-secondary flex items-center space-x-2 px-6 py-3"
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white font-mono"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
-            </motion.button>
+              <ChevronDown className="w-4 h-4 mr-2 rotate-90" />
+              Back to Traction
+            </Button>
 
-            <motion.button
+            <Button
               type="submit"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="wizard-button-primary flex-1 py-3 text-lg font-semibold"
-              disabled={uploadingFiles.length > 0}
+              disabled={isAnalyzing}
+              className={`px-8 py-3 rounded-lg font-medium transition-all font-mono ${
+                isAnalyzing
+                  ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl"
+              }`}
             >
-              {uploadingFiles.length > 0 ? (
+              {isAnalyzing ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  Uploading...
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing...
                 </>
               ) : (
-                "🚀 Generate My Valuation"
+                <>
+                  Generate Valuation
+                  <Sparkles className="w-4 h-4 ml-2" />
+                </>
               )}
-            </motion.button>
+            </Button>
+          </div>
+
+          {/* Auto-save indicator */}
+          <div className="text-center">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 bg-slate-800/50 rounded-full text-xs text-slate-400 font-mono">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span>Auto-saved</span>
+            </div>
           </div>
         </form>
 
-        {/* Auto-save indicator */}
-        <div className="mt-4 text-center">
-          <p className="text-xs text-gray-500">
-            🔒 Your progress is automatically saved
-          </p>
-        </div>
+        {/* AI Analysis Progress */}
+        <AnimatePresence>
+          {isAnalyzing && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mt-8"
+            >
+              <Card className="bg-gradient-to-r from-blue-900/30 via-purple-900/30 to-cyan-900/30 border-blue-500/50 backdrop-blur-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                      <Brain className="w-6 h-6 text-white animate-pulse" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-white font-mono mb-2">
+                        AI Analysis in Progress
+                      </h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2 text-sm text-slate-300 font-mono">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Processing business data...</span>
+                        </div>
+                        <div className="w-full bg-slate-800 rounded-full h-2">
+                          <motion.div
+                            className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full"
+                            initial={{ width: "0%" }}
+                            animate={{ width: "100%" }}
+                            transition={{ duration: 2 }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );
