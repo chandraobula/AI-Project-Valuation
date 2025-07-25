@@ -1,13 +1,8 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LandingPage } from "@/components/LandingPage";
-import { ModernWizardApp } from "@/components/modern-wizard/ModernWizardApp";
 
 export default function Index() {
-  const [showWizard, setShowWizard] = useState(false);
+  const navigate = useNavigate();
 
-  if (showWizard) {
-    return <ModernWizardApp />;
-  }
-
-  return <LandingPage onStartWizard={() => setShowWizard(true)} />;
+  return <LandingPage onStartWizard={() => navigate('/wizard')} />;
 }
