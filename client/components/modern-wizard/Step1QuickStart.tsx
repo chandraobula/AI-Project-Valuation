@@ -257,13 +257,19 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
                   <ChevronDown className="w-4 h-4 text-slate-400" />
                 </button>
 
-                <AnimatePresence>
-                  {showCountryDropdown && (
+{/* Portal-based dropdown to avoid clipping */}
+                {showCountryDropdown && createPortal(
+                  <AnimatePresence>
                     <motion.div
                       initial={{ opacity: 0, y: -10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      className="absolute top-full left-0 right-0 mt-2 bg-slate-900/95 border border-slate-700 rounded-lg shadow-2xl z-[99999] max-h-64 overflow-hidden backdrop-blur-xl"
+                      className="fixed bg-slate-900/95 border border-slate-700 rounded-lg shadow-2xl z-[99999] max-h-64 overflow-hidden backdrop-blur-xl country-dropdown-portal"
+                      style={{
+                        top: dropdownPosition.top,
+                        left: dropdownPosition.left,
+                        width: dropdownPosition.width,
+                      }}
                     >
                       <div className="p-3 border-b border-slate-700">
                         <div className="relative">
@@ -291,8 +297,9 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
                         ))}
                       </div>
                     </motion.div>
-                  )}
-                </AnimatePresence>
+                  </AnimatePresence>,
+                  document.body
+                )}
 
                 {errors.country && (
                   <p className="text-red-400 text-sm mt-2 font-mono">
