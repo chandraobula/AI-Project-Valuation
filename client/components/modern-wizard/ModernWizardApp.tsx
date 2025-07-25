@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Step1QuickStart } from "./Step1QuickStart";
 import { Step2FinancialSnapshot } from "./Step2FinancialSnapshot";
 import { Step3ProductTraction } from "./Step3ProductTraction";
 import { Step4AIExtras } from "./Step4AIExtras";
 import { ConfirmationStep } from "./ConfirmationStep";
 import { BackendConfig } from "../BackendConfig";
-import { CheckCircle, Circle } from "lucide-react";
+import { CheckCircle, Circle, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { fastapiService } from "@/lib/fastapi";
 
 interface WizardData {
