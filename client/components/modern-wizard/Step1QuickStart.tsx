@@ -187,7 +187,7 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
             </Card>
 
             {/* Country */}
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm relative">
               <CardContent className="p-6 relative">
                 <div className="flex items-center space-x-3 mb-4">
                   <Globe className="w-5 h-5 text-blue-400" />
