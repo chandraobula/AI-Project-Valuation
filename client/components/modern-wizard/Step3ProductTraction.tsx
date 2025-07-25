@@ -287,6 +287,7 @@ export function Step3ProductTraction({ onNext, onBack, initialData, onSave }: St
               </div>
               
               <button
+                ref={buttonRef}
                 type="button"
                 onClick={() => setShowGrowthPeriodDropdown(!showGrowthPeriodDropdown)}
                 className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all flex items-center justify-between font-mono"
