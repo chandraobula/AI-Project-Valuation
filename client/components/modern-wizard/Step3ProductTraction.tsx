@@ -305,13 +305,19 @@ export function Step3ProductTraction({ onNext, onBack, initialData, onSave }: St
                 <ChevronDown className="w-4 h-4 text-slate-400" />
               </button>
 
-              <AnimatePresence>
-                {showGrowthPeriodDropdown && (
+{/* Portal-based dropdown to avoid clipping */}
+              {showGrowthPeriodDropdown && createPortal(
+                <AnimatePresence>
                   <motion.div
                     initial={{ opacity: 0, y: -10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-slate-900/95 border border-slate-700 rounded-lg shadow-2xl z-[99999] backdrop-blur-xl"
+                    className="fixed bg-slate-900/95 border border-slate-700 rounded-lg shadow-2xl z-[99999] backdrop-blur-xl growth-dropdown-portal"
+                    style={{
+                      top: dropdownPosition.top,
+                      left: dropdownPosition.left,
+                      width: dropdownPosition.width,
+                    }}
                   >
                     {growthPeriods.map((period) => (
                       <button
@@ -328,8 +334,9 @@ export function Step3ProductTraction({ onNext, onBack, initialData, onSave }: St
                       </button>
                     ))}
                   </motion.div>
-                )}
-              </AnimatePresence>
+                </AnimatePresence>,
+                document.body
+              )}
 
               <div className="mt-2 text-xs text-slate-400 font-mono">
                 Time period for your growth rate measurement
