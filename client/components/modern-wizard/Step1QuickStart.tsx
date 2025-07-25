@@ -50,7 +50,7 @@ const industries = [
   { value: "saas", label: "SaaS/Software", icon: "💻" },
   { value: "ecommerce", label: "E-commerce", icon: "🛒" },
   { value: "fintech", label: "FinTech", icon: "💳" },
-  { value: "healthtech", label: "HealthTech", icon: "🏥" },
+  { value: "healthtech", label: "HealthTech", icon: "���" },
   { value: "edtech", label: "EdTech", icon: "📚" },
   { value: "ai", label: "AI/ML", icon: "🤖" },
   { value: "biotech", label: "Biotech", icon: "🧬" },
@@ -302,7 +302,7 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
                   {errors.industry.message}
                 </p>
               )}
-            </Card>
+            </CardContent>
           </Card>
 
           {/* Stage & Launch Status Row */}
