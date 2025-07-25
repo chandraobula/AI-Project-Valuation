@@ -93,19 +93,41 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Close dropdown when clicking outside
+  // Calculate dropdown position and handle outside clicks
   useEffect(() => {
+    const updatePosition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY + 8,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+      }
+    };
+
     const handleClickOutside = (event: MouseEvent) => {
       if (showCountryDropdown) {
         const target = event.target as Element;
-        if (!target.closest('.country-dropdown-container')) {
+        if (!target.closest('.country-dropdown-portal') && !buttonRef.current?.contains(target)) {
           setShowCountryDropdown(false);
         }
       }
     };
 
+    if (showCountryDropdown) {
+      updatePosition();
+      window.addEventListener('scroll', updatePosition);
+      window.addEventListener('resize', updatePosition);
+    }
+
     document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('resize', updatePosition);
+    };
   }, [showCountryDropdown]);
 
   const {
