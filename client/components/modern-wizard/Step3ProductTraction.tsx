@@ -108,19 +108,41 @@ export function Step3ProductTraction({ onNext, onBack, initialData, onSave }: St
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Close dropdown when clicking outside
+  // Calculate dropdown position and handle outside clicks
   useEffect(() => {
+    const updatePosition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY + 8,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+      }
+    };
+
     const handleClickOutside = (event: MouseEvent) => {
       if (showGrowthPeriodDropdown) {
         const target = event.target as Element;
-        if (!target.closest('.growth-dropdown-container')) {
+        if (!target.closest('.growth-dropdown-portal') && !buttonRef.current?.contains(target)) {
           setShowGrowthPeriodDropdown(false);
         }
       }
     };
 
+    if (showGrowthPeriodDropdown) {
+      updatePosition();
+      window.addEventListener('scroll', updatePosition);
+      window.addEventListener('resize', updatePosition);
+    }
+
     document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('resize', updatePosition);
+    };
   }, [showGrowthPeriodDropdown]);
 
   const {
