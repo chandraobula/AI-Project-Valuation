@@ -105,6 +105,8 @@ const competitiveAdvantages = [
 export function Step3ProductTraction({ onNext, onBack, initialData, onSave }: Step3Props) {
   const [showGrowthPeriodDropdown, setShowGrowthPeriodDropdown] = useState(false);
   const [selectedAdvantages, setSelectedAdvantages] = useState<string[]>([]);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
