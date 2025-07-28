@@ -288,7 +288,7 @@ export function ConfirmationStep({
           </p>
         </motion.div>
 
-        {/* Main Results Section */}
+        {/* Main Content */}
         {error ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -708,7 +708,7 @@ export function ConfirmationStep({
                             <div>
                               <h4 className="font-medium text-white mb-3 font-mono">Competitor Benchmarks</h4>
                               <div className="space-y-3">
-                                {valuationReport.competitorAnalysis.competitorBenchmarks.map((benchmark, index) => (
+                                {valuationReport.competitorAnalysis.competitorBenchmarks.map((benchmark: any, index) => (
                                   <div key={index} className="border border-slate-700 bg-slate-800/30 rounded-lg p-4">
                                     <div className="flex items-center justify-between mb-2">
                                       <h5 className="font-medium text-white font-mono">{benchmark.name}</h5>
