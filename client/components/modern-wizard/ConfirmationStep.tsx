@@ -93,56 +93,49 @@ export function ConfirmationStep({
     return () => clearTimeout(timer);
   }, [wizardData]);
 
-  // Generate real valuation using FastAPI backend
+  // Generate valuation using new API endpoint
   useEffect(() => {
-    let report: any = {};
-    setIsGenerating(true);
-    setError("");
-    setValuationReport(null);
-    setCurrentStage(1);
+    const generateValuation = async () => {
+      setIsGenerating(true);
+      setError("");
+      setValuationReport(null);
+      setCurrentStage(1);
+      setStatusMessage("Initializing valuation analysis...");
 
-    streamValuationReport(wizardData, (chunk) => {
       try {
-        // Handle status messages
-        if (chunk.status === "starting" && chunk.message) {
-          setStatusMessage(chunk.message);
-          setCurrentStage(chunk.stage);
-          return;
+        // Simulate progress stages for better UX
+        const stages = [
+          "Analyzing business model and metrics...",
+          "Identifying optimal valuation methods...",
+          "Performing detailed calculations...",
+          "Analyzing market comparables...",
+          "Generating strategic insights...",
+          "Finalizing valuation report..."
+        ];
+
+        for (let i = 0; i < stages.length - 1; i++) {
+          setCurrentStage(i + 1);
+          setStatusMessage(stages[i]);
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
-        // Handle actual data
-        if (chunk.stage === 1 && chunk.businessSummary) {
-          report.businessSummary = chunk.businessSummary;
-          setCurrentStage(1);
-        } else if (chunk.stage === 2 && chunk.recommendedMethods) {
-          report.recommendedMethods = chunk.recommendedMethods;
-          setCurrentStage(2);
-        } else if (chunk.stage === 3 && chunk.calculation) {
-          if (!report.calculations) report.calculations = [];
-          report.calculations.push(chunk.calculation);
-          setCurrentStage(3);
-        } else if (chunk.stage === 4 && chunk.competitorAnalysis) {
-          report.competitorAnalysis = chunk.competitorAnalysis;
-          setCurrentStage(4);
-        } else if (chunk.stage === 5 && chunk.strategicContext) {
-          report.strategicContext = chunk.strategicContext;
-          setCurrentStage(5);
-        } else if (chunk.stage === 6 && chunk.finalValuation) {
-          report.finalValuation = chunk.finalValuation;
-          setCurrentStage(6);
-          setValuationReport(report as ValuationReport);
-          setIsGenerating(false);
-        }
-      } catch (err) {
-        console.error("Error processing chunk:", err);
-        setError("Error processing analysis data. Please try again.");
+        setCurrentStage(6);
+        setStatusMessage(stages[5]);
+
+        // Call the new API
+        const report = await fastapiService.generateValuationReportNew(wizardData);
+
+        setValuationReport(report);
+        setIsGenerating(false);
+        setStatusMessage("Analysis complete!");
+      } catch (error: any) {
+        console.error("Valuation generation error:", error);
+        setError(error.message || "Analysis failed. Please try again.");
         setIsGenerating(false);
       }
-    }).catch((error) => {
-      console.error("Streaming error:", error);
-      setError(error.message || "Analysis failed. Please try again.");
-      setIsGenerating(false);
-    });
+    };
+
+    generateValuation();
   }, [wizardData]);
 
   const getValuationRange = () => {
