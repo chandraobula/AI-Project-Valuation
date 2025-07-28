@@ -215,8 +215,7 @@ export function Step2FinancialSnapshot({ onNext, onBack, initialData, onSave }: 
                       placeholder={field.placeholder}
                       className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"
                       style={{
-                        color: showValues ? 'white' : 'transparent',
-                        textShadow: showValues ? 'none' : '0 0 8px rgba(255,255,255,0.8)',
+                        color: 'white',
                         caretColor: 'white'
                       }}
                     />
