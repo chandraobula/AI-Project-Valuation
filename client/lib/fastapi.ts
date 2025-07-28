@@ -172,30 +172,6 @@ function transformWizardDataToNewAPI(wizardData: WizardData): any {
     payload.amountToRaise = 0;
   }
 
-  // Traction data
-  if (wizardData.step3 && !wizardData.step3.skipTraction) {
-    payload.customerCount = wizardData.step3.customerCount || 0;
-    payload.growthRate = wizardData.step3.growthRate || 0;
-    payload.growthPeriod = wizardData.step3.growthPeriod === "monthly" ? "Monthly" : "Annual";
-    payload.differentiator = wizardData.step3.uniqueValue || "";
-  } else {
-    payload.customerCount = 0;
-    payload.growthRate = 0;
-    payload.growthPeriod = "Annual";
-    payload.differentiator = "";
-  }
-
-  // Additional data
-  if (wizardData.step4 && !wizardData.step4.skipExtras) {
-    payload.linkedin = wizardData.step4.linkedinUrl || "";
-    payload.crunchbase = wizardData.step4.crunchbaseUrl || "";
-    payload.website = wizardData.step4.websiteUrl || "";
-  } else {
-    payload.linkedin = "";
-    payload.crunchbase = "";
-    payload.website = "";
-  }
-
   return payload;
 }
 
