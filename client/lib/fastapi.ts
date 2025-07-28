@@ -388,6 +388,51 @@ export const fastapiService = {
     }
   },
 
+  async generateValuationReportNew(
+    wizardData: WizardData,
+  ): Promise<ValuationReport> {
+    try {
+      const payload = transformWizardDataToNewAPI(wizardData);
+      console.log("Sending payload to new API:", payload);
+
+      // Create axios instance for external API
+      const externalApi = axios.create({
+        timeout: 60000, // 60 second timeout
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true", // Skip ngrok warning page
+        },
+      });
+
+      const response = await externalApi.post(
+        "https://e3c8babef5b7.ngrok-free.app/valuation-report",
+        payload,
+      );
+
+      // Transform response to our expected format
+      const apiResponse = response.data;
+      return transformAPIResponseToValuationReport(apiResponse, wizardData);
+    } catch (error: any) {
+      console.error("New API valuation error:", error);
+
+      if (error.code === "ERR_NETWORK" || error.message?.includes("Network Error")) {
+        throw new Error("Cannot connect to valuation API. Please check your internet connection.");
+      } else if (error.response?.status === 500) {
+        throw new Error("Valuation API server error. Please try again later.");
+      } else if (error.response?.status === 422) {
+        throw new Error("Invalid data format sent to valuation API.");
+      } else if (error.message?.includes("timeout")) {
+        throw new Error("Valuation analysis is taking longer than expected. Please try again.");
+      }
+
+      throw new Error(
+        error.response?.data?.detail ||
+          error.message ||
+          "Failed to generate valuation report from new API",
+      );
+    }
+  },
+
   async testConnection(): Promise<boolean> {
     if (currentBackendUrl === "demo") {
       return true;
