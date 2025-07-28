@@ -221,12 +221,24 @@ function transformAPIResponseToValuationReport(apiResponse: any, wizardData: Wiz
   if (apiResponse.businessSummary && apiResponse.recommendedMethods && apiResponse.calculations) {
     // Parse strategic context if it's a JSON string
     let strategicContext = apiResponse.strategicContext;
-    if (typeof strategicContext === 'string' && strategicContext.includes('strategicValuationContext')) {
+    if (typeof strategicContext === 'string' && (strategicContext.includes('strategicValuationContext') || strategicContext.includes('strategicContext'))) {
       try {
         const parsed = JSON.parse(strategicContext);
-        strategicContext = parsed.strategicValuationContext
-          .map((item: any) => item.paragraph)
-          .join('\n\n');
+
+        // Handle new format with strategicContext object containing paragraph1, paragraph2, etc.
+        if (parsed.strategicContext && typeof parsed.strategicContext === 'object') {
+          const paragraphs = Object.keys(parsed.strategicContext)
+            .filter(key => key.startsWith('paragraph'))
+            .sort()
+            .map(key => parsed.strategicContext[key]);
+          strategicContext = paragraphs.join('\n\n');
+        }
+        // Handle legacy format
+        else if (parsed.strategicValuationContext) {
+          strategicContext = parsed.strategicValuationContext
+            .map((item: any) => item.paragraph)
+            .join('\n\n');
+        }
       } catch (e) {
         // Keep as string if parsing fails
       }
