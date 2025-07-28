@@ -876,7 +876,7 @@ export function ConfirmationStep({
               </motion.div>
             )}
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );
