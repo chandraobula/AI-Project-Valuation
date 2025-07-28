@@ -96,11 +96,11 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
   // Calculate dropdown position and handle outside clicks
   useEffect(() => {
     const updatePosition = () => {
-      if (buttonRef.current) {
+      if (buttonRef.current && showCountryDropdown) {
         const rect = buttonRef.current.getBoundingClientRect();
         setDropdownPosition({
-          top: rect.bottom + window.scrollY + 8,
-          left: rect.left + window.scrollX,
+          top: rect.bottom + 8,
+          left: rect.left,
           width: rect.width
         });
       }
@@ -115,18 +115,27 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
       }
     };
 
+    const handleScroll = () => {
+      updatePosition();
+    };
+
+    const handleResize = () => {
+      updatePosition();
+    };
+
     if (showCountryDropdown) {
       updatePosition();
-      window.addEventListener('scroll', updatePosition);
-      window.addEventListener('resize', updatePosition);
+      // Use passive listeners for better performance during scroll
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      window.addEventListener('resize', handleResize, { passive: true });
     }
 
     document.addEventListener('click', handleClickOutside);
 
     return () => {
       document.removeEventListener('click', handleClickOutside);
-      window.removeEventListener('scroll', updatePosition);
-      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
     };
   }, [showCountryDropdown]);
 
