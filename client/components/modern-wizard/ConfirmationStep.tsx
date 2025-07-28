@@ -154,19 +154,37 @@ export function ConfirmationStep({
   }, [wizardData]);
 
   const getValuationRange = () => {
-    if (!valuationReport?.finalValuation?.finalRange) {
-      // Try to get range from calculations if finalValuation is empty
-      if (valuationReport?.calculations?.length > 0) {
-        const ranges = valuationReport.calculations.map(calc => calc.valuationRange);
-        const lower = Math.min(...ranges.map(r => r.lower));
-        const upper = Math.max(...ranges.map(r => r.upper));
-        return { lower: lower * 1000000, upper: upper * 1000000 };
-      }
-      return null;
+    // First try to get from finalValuation
+    if (valuationReport?.finalValuation?.finalRange &&
+        typeof valuationReport.finalValuation.finalRange === 'object' &&
+        valuationReport.finalValuation.finalRange.lower !== undefined &&
+        valuationReport.finalValuation.finalRange.upper !== undefined &&
+        !isNaN(valuationReport.finalValuation.finalRange.lower) &&
+        !isNaN(valuationReport.finalValuation.finalRange.upper)) {
+
+      const { lower, upper } = valuationReport.finalValuation.finalRange;
+      return { lower: lower * 1000000, upper: upper * 1000000 }; // Convert from millions to actual values
     }
 
-    const { lower, upper } = valuationReport.finalValuation.finalRange;
-    return { lower: lower * 1000000, upper: upper * 1000000 }; // Convert from millions to actual values
+    // Fallback: get range from calculations
+    if (valuationReport?.calculations?.length > 0) {
+      const ranges = valuationReport.calculations.map(calc => calc.valuationRange);
+      const validRanges = ranges.filter(r => r && r.lower !== undefined && r.upper !== undefined && !isNaN(r.lower) && !isNaN(r.upper));
+
+      if (validRanges.length > 0) {
+        const lower = Math.min(...validRanges.map(r => r.lower));
+        const upper = Math.max(...validRanges.map(r => r.upper));
+
+        // Check if the values seem to be in thousands (typical for this API response)
+        if (lower < 10000 && upper < 10000) {
+          return { lower: lower * 1000, upper: upper * 1000 }; // Convert from thousands to actual values
+        } else {
+          return { lower, upper }; // Use as-is if already in reasonable range
+        }
+      }
+    }
+
+    return null;
   };
 
   const formatCurrency = (amount: number): string => {
