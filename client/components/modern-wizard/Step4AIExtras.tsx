@@ -23,8 +23,6 @@ import { FileUpload } from "../FileUpload";
 import { UploadResponse } from "@/lib/api";
 
 const formSchema = z.object({
-  pitchDeck: z.any().optional(),
-  financialModel: z.any().optional(),
   linkedinUrl: z
     .string()
     .url("Please enter a valid LinkedIn URL")
@@ -46,7 +44,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 interface Step4Props {
-  onNext: (data: FormData & { uploadedFiles?: UploadResponse[] }) => void;
+  onNext: (data: FormData) => void;
   onBack: () => void;
   initialData?: Partial<FormData>;
   onSave?: (data: Partial<FormData>) => void;
@@ -80,7 +78,6 @@ const urlFields = [
 ];
 
 export function Step4AIExtras({ onNext, onBack, initialData, onSave }: Step4Props) {
-  const [uploadedFiles, setUploadedFiles] = useState<UploadResponse[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const {
@@ -92,8 +89,6 @@ export function Step4AIExtras({ onNext, onBack, initialData, onSave }: Step4Prop
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      pitchDeck: initialData?.pitchDeck || undefined,
-      financialModel: initialData?.financialModel || undefined,
       linkedinUrl: initialData?.linkedinUrl || "",
       crunchbaseUrl: initialData?.crunchbaseUrl || "",
       websiteUrl: initialData?.websiteUrl || "",
@@ -121,19 +116,10 @@ export function Step4AIExtras({ onNext, onBack, initialData, onSave }: Step4Prop
     // Simulate AI analysis delay
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    onNext({
-      ...data,
-      uploadedFiles
-    });
+    onNext(data);
   };
 
-  const handleFileUpload = (file: UploadResponse) => {
-    setUploadedFiles(prev => [...prev, file]);
-  };
 
-  const removeFile = (fileId: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
-  };
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -143,7 +129,7 @@ export function Step4AIExtras({ onNext, onBack, initialData, onSave }: Step4Prop
         transition={{ duration: 0.5 }}
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          {/* AI Enhancement Header */}
+          {/* Company Information Header */}
           <Card className="bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-cyan-900/20 border-blue-500/30 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
@@ -151,113 +137,16 @@ export function Step4AIExtras({ onNext, onBack, initialData, onSave }: Step4Prop
                   <Brain className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white font-mono">AI-Powered Enhancement</h3>
+                  <h3 className="text-lg font-bold text-white font-mono">Company Information</h3>
                   <p className="text-sm text-slate-300 font-mono">
-                    Upload documents and links for deeper analysis and more accurate valuations
+                    Add your company links for enhanced analysis and more accurate valuations
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* File Uploads */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Pitch Deck Upload */}
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <FileText className="w-5 h-5 text-purple-400" />
-                  <label className="text-sm font-medium text-white font-mono">
-                    Pitch Deck
-                  </label>
-                  {uploadedFiles.some(f => f.type === 'pitch-deck') && (
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                  )}
-                </div>
-                
-                <FileUpload
-                  onFileUpload={handleFileUpload}
-                  fileType="pitch-deck"
-                  accept=".pdf,.ppt,.pptx"
-                  className="border-dashed border-2 border-slate-700 hover:border-blue-500 transition-colors"
-                />
-                
-                <div className="mt-2 text-xs text-slate-400 font-mono">
-                  PDF or PowerPoint format • Max 10MB
-                </div>
 
-                {/* Uploaded Files Display */}
-                {uploadedFiles.filter(f => f.type === 'pitch-deck').map((file) => (
-                  <motion.div
-                    key={file.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="mt-3 flex items-center justify-between p-3 bg-slate-800/50 rounded-lg"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <FileText className="w-4 h-4 text-purple-400" />
-                      <span className="text-sm text-white font-mono">{file.filename}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(file.id)}
-                      className="text-slate-400 hover:text-red-400 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </motion.div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Financial Model Upload */}
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Paperclip className="w-5 h-5 text-green-400" />
-                  <label className="text-sm font-medium text-white font-mono">
-                    Financial Model
-                  </label>
-                  {uploadedFiles.some(f => f.type === 'financial-model') && (
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                  )}
-                </div>
-                
-                <FileUpload
-                  onFileUpload={handleFileUpload}
-                  fileType="financial-model"
-                  accept=".xlsx,.xls,.csv"
-                  className="border-dashed border-2 border-slate-700 hover:border-green-500 transition-colors"
-                />
-                
-                <div className="mt-2 text-xs text-slate-400 font-mono">
-                  Excel or CSV format • Max 5MB
-                </div>
-
-                {/* Uploaded Files Display */}
-                {uploadedFiles.filter(f => f.type === 'financial-model').map((file) => (
-                  <motion.div
-                    key={file.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="mt-3 flex items-center justify-between p-3 bg-slate-800/50 rounded-lg"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Paperclip className="w-4 h-4 text-green-400" />
-                      <span className="text-sm text-white font-mono">{file.filename}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(file.id)}
-                      className="text-slate-400 hover:text-red-400 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </motion.div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
 
           {/* URLs Section */}
           <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
@@ -312,10 +201,10 @@ export function Step4AIExtras({ onNext, onBack, initialData, onSave }: Step4Prop
                 />
                 <div>
                   <label className="text-sm font-medium text-white font-mono">
-                    Skip AI enhancements for now
+                    Skip company links for now
                   </label>
                   <p className="text-xs text-slate-400 font-mono mt-1">
-                    Generate basic valuation without additional document analysis.
+                    Generate valuation without additional company information.
                   </p>
                 </div>
               </div>
