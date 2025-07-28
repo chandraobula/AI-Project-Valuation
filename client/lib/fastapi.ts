@@ -127,7 +127,79 @@ export interface ValuationReport {
   };
 }
 
-// Transform wizard data to backend format
+// Transform wizard data to the new API format
+function transformWizardDataToNewAPI(wizardData: WizardData): any {
+  const stageMappings: { [key: string]: string } = {
+    "idea": "Idea",
+    "mvp": "MVP",
+    "launched": "Launched",
+    "growth": "Growth"
+  };
+
+  const industryMappings: { [key: string]: string } = {
+    "saas": "SaaS",
+    "ecommerce": "E-commerce",
+    "fintech": "Fintech/SaaS",
+    "healthtech": "HealthTech",
+    "edtech": "EdTech",
+    "ai": "AI/ML",
+    "biotech": "Biotech",
+    "cleantech": "CleanTech",
+    "gaming": "Gaming",
+    "other": "Other"
+  };
+
+  const payload: any = {
+    name: wizardData.step1?.businessName || "Unknown Company",
+    country: wizardData.step1?.country || "United States",
+    industry: industryMappings[wizardData.step1?.industry || "other"] || "Other",
+    stage: stageMappings[wizardData.step1?.stage || "idea"] || "Idea",
+    productLaunched: wizardData.step1?.isLaunched || false,
+  };
+
+  // Financial data (convert to thousands for API)
+  if (wizardData.step2 && !wizardData.step2.skipFinancials) {
+    payload.revenue12m = Math.round((wizardData.step2.revenue || 0) / 1000); // Convert to thousands
+    payload.burnRate = Math.round((wizardData.step2.monthlyBurnRate || 0) / 1000); // Convert to thousands
+    payload.netProfit = Math.round((wizardData.step2.netProfitLoss || 0) / 1000); // Convert to thousands
+    payload.fundingRaised = Math.round((wizardData.step2.fundingRaised || 0) / 1000); // Convert to thousands
+    payload.amountToRaise = Math.round((wizardData.step2.planningToRaise || 0) / 1000); // Convert to thousands
+  } else {
+    payload.revenue12m = 0;
+    payload.burnRate = 0;
+    payload.netProfit = 0;
+    payload.fundingRaised = 0;
+    payload.amountToRaise = 0;
+  }
+
+  // Traction data
+  if (wizardData.step3 && !wizardData.step3.skipTraction) {
+    payload.customerCount = wizardData.step3.customerCount || 0;
+    payload.growthRate = wizardData.step3.growthRate || 0;
+    payload.growthPeriod = wizardData.step3.growthPeriod === "monthly" ? "Monthly" : "Annual";
+    payload.differentiator = wizardData.step3.uniqueValue || "";
+  } else {
+    payload.customerCount = 0;
+    payload.growthRate = 0;
+    payload.growthPeriod = "Annual";
+    payload.differentiator = "";
+  }
+
+  // Additional data
+  if (wizardData.step4 && !wizardData.step4.skipExtras) {
+    payload.linkedin = wizardData.step4.linkedinUrl || "";
+    payload.crunchbase = wizardData.step4.crunchbaseUrl || "";
+    payload.website = wizardData.step4.websiteUrl || "";
+  } else {
+    payload.linkedin = "";
+    payload.crunchbase = "";
+    payload.website = "";
+  }
+
+  return payload;
+}
+
+// Legacy transform function (kept for compatibility)
 function transformWizardDataToBackend(wizardData: WizardData): any {
   const payload: any = {
     // Basic company information
