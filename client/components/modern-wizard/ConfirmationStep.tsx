@@ -819,42 +819,56 @@ export function ConfirmationStep({
                         transition={{ duration: 0.3 }}
                       >
                         <CardContent>
-                          <div className="space-y-6">
-                            {valuationReport.strategicContext.split('\n\n').map((paragraph, index) => (
-                              <motion.div
-                                key={index}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                className="bg-gradient-to-r from-purple-900/10 to-blue-900/10 border-l-4 border-purple-400 rounded-r-lg p-6"
-                              >
-                                <div className="flex items-start space-x-4">
-                                  <div className="flex-shrink-0">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                      {index + 1}
-                                    </div>
+                          <div className="space-y-4">
+                            {valuationReport.strategicContext.split('\n\n').map((paragraph, index) => {
+                              // Split paragraph into bullet points based on sentences
+                              const sentences = paragraph
+                                .split(/(?<=[.!?])\s+/)
+                                .filter(sentence => sentence.trim().length > 0);
+
+                              return (
+                                <motion.div
+                                  key={index}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: index * 0.1 }}
+                                  className="bg-gradient-to-r from-purple-900/10 to-blue-900/10 border border-purple-500/20 rounded-lg p-6"
+                                >
+                                  <div className="mb-3">
+                                    <Badge className="bg-purple-900/30 border border-purple-500/30 text-purple-400 font-mono text-xs">
+                                      {index === 0 ? 'Market Position & Valuation Analysis' :
+                                       index === 1 ? 'Competitive Landscape & Strategic Outlook' :
+                                       `Strategic Insight ${index + 1}`}
+                                    </Badge>
                                   </div>
-                                  <div className="flex-1">
-                                    <div className="mb-2">
-                                      <Badge className="bg-purple-900/30 border border-purple-500/30 text-purple-400 font-mono text-xs">
-                                        {index === 0 ? 'Market Position & Valuation Analysis' :
-                                         index === 1 ? 'Competitive Landscape & Strategic Outlook' :
-                                         `Strategic Insight ${index + 1}`}
-                                      </Badge>
-                                    </div>
-                                    <p className="text-slate-300 leading-relaxed font-mono text-sm">
-                                      {paragraph}
-                                    </p>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            ))}
+
+                                  <ul className="space-y-3">
+                                    {sentences.map((sentence, sentenceIndex) => (
+                                      <motion.li
+                                        key={sentenceIndex}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: (index * 0.1) + (sentenceIndex * 0.05) }}
+                                        className="flex items-start space-x-3"
+                                      >
+                                        <div className="flex-shrink-0 mt-2">
+                                          <div className="w-2 h-2 bg-gradient-to-br from-purple-400 to-blue-500 rounded-full"></div>
+                                        </div>
+                                        <span className="text-slate-300 leading-relaxed font-mono text-sm">
+                                          {sentence.trim()}
+                                        </span>
+                                      </motion.li>
+                                    ))}
+                                  </ul>
+                                </motion.div>
+                              );
+                            })}
 
                             {/* Key Insights Summary */}
                             <motion.div
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.3 }}
+                              transition={{ delay: 0.4 }}
                               className="mt-6 p-4 bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-xl"
                             >
                               <div className="flex items-center space-x-2 mb-3">
