@@ -625,27 +625,55 @@ export function ConfirmationStep({
                                 </p>
                               </div>
                               
-                              {typeof calc.calculation === 'object' ? (
-                                <details className="text-xs text-slate-400 font-mono">
-                                  <summary className="cursor-pointer hover:text-slate-300 transition-colors mb-2">
-                                    View detailed calculation breakdown
-                                  </summary>
-                                  <div className="mt-2 p-4 bg-slate-950/50 rounded-lg border border-slate-700">
-                                    <pre className="whitespace-pre-wrap text-slate-300">
-                                      {JSON.stringify(calc.calculation, null, 2)}
-                                    </pre>
-                                  </div>
-                                </details>
-                              ) : (
-                                <details className="text-xs text-slate-400 font-mono">
-                                  <summary className="cursor-pointer hover:text-slate-300 transition-colors">
-                                    View calculation details
-                                  </summary>
-                                  <div className="mt-2 p-4 bg-slate-950/50 rounded-lg border border-slate-700 whitespace-pre-wrap">
-                                    {calc.calculation}
-                                  </div>
-                                </details>
-                              )}
+                              <details className="text-xs text-slate-400 font-mono">
+                                <summary className="cursor-pointer hover:text-slate-300 transition-colors mb-2">
+                                  View detailed calculation breakdown
+                                </summary>
+                                <div className="mt-2 p-4 bg-slate-950/50 rounded-lg border border-slate-700">
+                                  {typeof calc.calculation === 'object' ? (
+                                    <div className="space-y-3">
+                                      {Object.entries(calc.calculation).map(([key, value]) => (
+                                        <div key={key} className="flex justify-between items-center py-2 border-b border-slate-700/50 last:border-b-0">
+                                          <span className="font-medium text-slate-300 capitalize">
+                                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                                          </span>
+                                          <span className="text-slate-200 font-mono">
+                                            {typeof value === 'number' ? (
+                                              key.toLowerCase().includes('rate') ?
+                                                `${(value * 100).toFixed(1)}%` :
+                                              key.toLowerCase().includes('value') || key.toLowerCase().includes('revenue') || key.toLowerCase().includes('cash') ?
+                                                `$${value.toLocaleString()}${key.toLowerCase().includes('12m') ? 'K' : ''}` :
+                                              value.toLocaleString()
+                                            ) : Array.isArray(value) ? (
+                                              <div className="text-right">
+                                                {value.map((item, idx) => (
+                                                  <div key={idx} className="text-xs">
+                                                    Year {idx + 1}: ${typeof item === 'number' ? item.toLocaleString() : item}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            ) : typeof value === 'object' ? (
+                                              <div className="text-right text-xs">
+                                                {Object.entries(value).map(([subKey, subValue]) => (
+                                                  <div key={subKey}>
+                                                    {subKey}: {typeof subValue === 'number' ? subValue.toLocaleString() : String(subValue)}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              String(value)
+                                            )}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-slate-300 whitespace-pre-wrap">
+                                      {calc.calculation}
+                                    </div>
+                                  )}
+                                </div>
+                              </details>
                             </div>
                           </div>
                         ))}
