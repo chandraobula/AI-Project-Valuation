@@ -819,12 +819,67 @@ export function ConfirmationStep({
                         transition={{ duration: 0.3 }}
                       >
                         <CardContent>
-                          <div className="prose prose-invert max-w-none">
+                          <div className="space-y-6">
                             {valuationReport.strategicContext.split('\n\n').map((paragraph, index) => (
-                              <p key={index} className="text-slate-300 leading-relaxed font-mono mb-4">
-                                {paragraph}
-                              </p>
+                              <motion.div
+                                key={index}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="bg-gradient-to-r from-purple-900/10 to-blue-900/10 border-l-4 border-purple-400 rounded-r-lg p-6"
+                              >
+                                <div className="flex items-start space-x-4">
+                                  <div className="flex-shrink-0">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                      {index + 1}
+                                    </div>
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="mb-2">
+                                      <Badge className="bg-purple-900/30 border border-purple-500/30 text-purple-400 font-mono text-xs">
+                                        {index === 0 ? 'Market Position & Valuation Analysis' :
+                                         index === 1 ? 'Competitive Landscape & Strategic Outlook' :
+                                         `Strategic Insight ${index + 1}`}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-slate-300 leading-relaxed font-mono text-sm">
+                                      {paragraph}
+                                    </p>
+                                  </div>
+                                </div>
+                              </motion.div>
                             ))}
+
+                            {/* Key Insights Summary */}
+                            <motion.div
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.3 }}
+                              className="mt-6 p-4 bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-xl"
+                            >
+                              <div className="flex items-center space-x-2 mb-3">
+                                <Sparkles className="w-5 h-5 text-blue-400" />
+                                <h4 className="font-medium text-white font-mono">Key Strategic Takeaways</h4>
+                              </div>
+                              <div className="grid md:grid-cols-2 gap-4 text-sm">
+                                <div className="flex items-start space-x-2">
+                                  <TrendingUp className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                                  <span className="text-slate-300 font-mono">Market opportunity with established revenue generation</span>
+                                </div>
+                                <div className="flex items-start space-x-2">
+                                  <AlertTriangle className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                                  <span className="text-slate-300 font-mono">Competitive market requiring differentiation</span>
+                                </div>
+                                <div className="flex items-start space-x-2">
+                                  <Target className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                                  <span className="text-slate-300 font-mono">Multiple valuation methods provide comprehensive view</span>
+                                </div>
+                                <div className="flex items-start space-x-2">
+                                  <Zap className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
+                                  <span className="text-slate-300 font-mono">Growth potential contingent on execution strategy</span>
+                                </div>
+                              </div>
+                            </motion.div>
                           </div>
                         </CardContent>
                       </motion.div>
