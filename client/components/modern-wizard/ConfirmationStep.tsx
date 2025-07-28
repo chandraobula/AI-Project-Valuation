@@ -19,7 +19,16 @@ import {
   Zap,
   Eye,
   Sparkles,
-  Terminal
+  Terminal,
+  ChevronDown,
+  ChevronUp,
+  Lightbulb,
+  Shield,
+  AlertTriangle,
+  Award,
+  TrendingDown,
+  Building,
+  Globe
 } from "lucide-react";
 import {
   fastapiService,
@@ -52,6 +61,13 @@ export function ConfirmationStep({
   const [statusMessage, setStatusMessage] = useState<string>(
     "Initializing analysis...",
   );
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
+    summary: true,
+    methods: true,
+    calculations: false,
+    competitors: false,
+    strategic: false
+  });
 
   // Calculate confidence score based on data completeness
   useEffect(() => {
@@ -78,7 +94,6 @@ export function ConfirmationStep({
 
     // Step 4 data
     if (wizardData.step4 && !wizardData.step4.skipExtras) {
-      if (wizardData.step4.uploadedFiles?.length > 0) score += 10;
       if (wizardData.step4.linkedinUrl) score += 2;
       if (wizardData.step4.websiteUrl) score += 3;
     }
@@ -106,7 +121,7 @@ export function ConfirmationStep({
         // Simulate progress stages for better UX
         const stages = [
           "Analyzing business model and metrics...",
-          "Identifying optimal valuation methods...",
+          "Identifying optimal valuation methods...", 
           "Performing detailed calculations...",
           "Analyzing market comparables...",
           "Generating strategic insights...",
@@ -124,7 +139,7 @@ export function ConfirmationStep({
 
         // Call the new API
         const report = await fastapiService.generateValuationReportNew(wizardData);
-
+        
         setValuationReport(report);
         setIsGenerating(false);
         setStatusMessage("Analysis complete!");
@@ -139,7 +154,16 @@ export function ConfirmationStep({
   }, [wizardData]);
 
   const getValuationRange = () => {
-    if (!valuationReport?.finalValuation?.finalRange) return null;
+    if (!valuationReport?.finalValuation?.finalRange) {
+      // Try to get range from calculations if finalValuation is empty
+      if (valuationReport?.calculations?.length > 0) {
+        const ranges = valuationReport.calculations.map(calc => calc.valuationRange);
+        const lower = Math.min(...ranges.map(r => r.lower));
+        const upper = Math.max(...ranges.map(r => r.upper));
+        return { lower: lower * 1000000, upper: upper * 1000000 };
+      }
+      return null;
+    }
 
     const { lower, upper } = valuationReport.finalValuation.finalRange;
     return { lower: lower * 1000000, upper: upper * 1000000 }; // Convert from millions to actual values
@@ -170,12 +194,26 @@ export function ConfirmationStep({
     return "Initial Estimate";
   };
 
+  const getMethodConfidenceColor = (confidence: number) => {
+    if (confidence >= 0.8) return "text-green-400";
+    if (confidence >= 0.6) return "text-blue-400";
+    if (confidence >= 0.4) return "text-yellow-400";
+    return "text-orange-400";
+  };
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
   const getSummaryStats = () => {
     const stats = [];
 
     if (wizardData.step1?.businessName) {
       stats.push({
-        icon: FileText,
+        icon: Building,
         label: "Business",
         value: wizardData.step1.businessName,
         color: "text-blue-400",
@@ -199,15 +237,6 @@ export function ConfirmationStep({
         label: "Revenue",
         value: formatCurrency(wizardData.step2.revenue),
         color: "text-green-400",
-      });
-    }
-
-    if (wizardData.step3?.customerCount && wizardData.step3.customerCount > 0) {
-      stats.push({
-        icon: Users,
-        label: "Customers",
-        value: wizardData.step3.customerCount.toLocaleString(),
-        color: "text-orange-400",
       });
     }
 
@@ -235,7 +264,7 @@ export function ConfirmationStep({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -255,358 +284,598 @@ export function ConfirmationStep({
             Valuation Complete!
           </h1>
           <p className="text-xl text-slate-400 font-mono">
-            Your AI-powered startup analysis is ready
+            Your comprehensive AI-powered startup analysis is ready
           </p>
         </motion.div>
 
-        {/* Confidence Meter */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm mb-8">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white font-mono">
-                  Analysis Confidence
-                </h3>
-                <Badge className={`px-3 py-1 rounded-full text-sm font-mono border ${getConfidenceColor(confidence)}`}>
-                  {getConfidenceLabel(confidence)}
-                </Badge>
-              </div>
-
-              <div className="relative">
-                <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${confidence}%` }}
-                    transition={{ duration: 2, ease: "easeOut" }}
-                  />
-                </div>
-                <div className="flex justify-between text-sm text-slate-400 mt-2 font-mono">
-                  <span>0%</span>
-                  <span className="font-medium text-white">{confidence}%</span>
-                  <span>100%</span>
-                </div>
-              </div>
-
-              <p className="text-sm text-slate-400 mt-3 font-mono">
-                Based on data completeness and quality
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Main Results */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm mb-8">
-            <CardContent className="p-8 text-center">
-              {error ? (
-                <div className="space-y-4">
-                  <div className="w-16 h-16 bg-red-900/30 border border-red-500/30 rounded-2xl flex items-center justify-center mx-auto">
-                    <AlertCircle className="w-8 h-8 text-red-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-red-400 font-mono">
-                    Analysis Error
-                  </h3>
-                  <p className="text-red-300 max-w-md mx-auto font-mono">{error}</p>
-                  <Button
-                    onClick={() => {
-                      setError("");
-                      setIsGenerating(true);
-                    }}
-                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-mono"
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Try Again
-                  </Button>
-                </div>
-              ) : isGenerating ? (
-                <div className="space-y-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-                    <Brain className="w-8 h-8 text-white animate-pulse" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white font-mono">
-                    {statusMessage || getAnalysisStages()[currentStage - 1]}
-                  </h3>
-                  <div className="flex items-center justify-center space-x-2 text-slate-400">
-                    <Clock className="w-4 h-4" />
-                    <span className="text-sm font-mono">Stage {currentStage} of 6</span>
-                  </div>
-                  <div className="w-full max-w-xs mx-auto bg-slate-800 rounded-full h-2">
-                    <motion.div
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(currentStage / 6) * 100}%` }}
-                      transition={{ duration: 0.5 }}
-                    />
-                  </div>
-                </div>
-              ) : valuationReport ? (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-2xl font-semibold text-white mb-4 font-mono">
-                      Estimated Valuation Range
-                    </h3>
-                    {getValuationRange() ? (
-                      <div className="space-y-2">
-                        <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent font-mono">
-                          {formatCurrency(getValuationRange()!.lower)} -{" "}
-                          {formatCurrency(getValuationRange()!.upper)}
-                        </div>
-                        <p className="text-sm text-slate-400 font-mono">
-                          Based on {valuationReport.calculations?.length || 0}{" "}
-                          valuation methodologies
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="text-3xl font-bold text-slate-400 font-mono">
-                        Analysis Complete
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-center space-x-2 text-slate-400">
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                    <span className="font-mono">Professional analysis complete</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto">
-                    <AlertCircle className="w-8 h-8 text-slate-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white font-mono">
-                    Initializing Analysis...
-                  </h3>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Detailed Results */}
-        {!isGenerating && !error && valuationReport && (
+        {/* Main Results Section */}
+        {error ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
-            className="space-y-8 mb-8"
+            className="mb-8"
           >
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-red-900/30 border border-red-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-red-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-red-400 font-mono mb-4">
+                  Analysis Error
+                </h3>
+                <p className="text-red-300 max-w-md mx-auto font-mono mb-6">{error}</p>
+                <Button
+                  onClick={() => {
+                    setError("");
+                    setIsGenerating(true);
+                  }}
+                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-mono"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ) : isGenerating ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <Brain className="w-8 h-8 text-white animate-pulse" />
+                </div>
+                <h3 className="text-xl font-semibold text-white font-mono mb-4">
+                  {statusMessage || getAnalysisStages()[currentStage - 1]}
+                </h3>
+                <div className="flex items-center justify-center space-x-2 text-slate-400 mb-4">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm font-mono">Stage {currentStage} of 6</span>
+                </div>
+                <div className="w-full max-w-xs mx-auto bg-slate-800 rounded-full h-3">
+                  <motion.div
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(currentStage / 6) * 100}%` }}
+                    transition={{ duration: 0.5 }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ) : valuationReport ? (
+          <>
+            {/* Valuation Summary */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-8"
+            >
+              <Card className="bg-gradient-to-r from-slate-900/90 to-slate-800/90 border-slate-700/50 backdrop-blur-sm">
+                <CardContent className="p-8 text-center">
+                  <h3 className="text-2xl font-semibold text-white mb-6 font-mono">
+                    Estimated Valuation Range
+                  </h3>
+                  {getValuationRange() ? (
+                    <div className="space-y-4">
+                      <div className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent font-mono">
+                        {formatCurrency(getValuationRange()!.lower)} - {formatCurrency(getValuationRange()!.upper)}
+                      </div>
+                      <p className="text-lg text-slate-300 font-mono">
+                        Based on {valuationReport.calculations?.length || 0} valuation methodologies
+                      </p>
+                      
+                      {/* Confidence Meter */}
+                      <div className="max-w-md mx-auto mt-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-mono text-slate-400">Analysis Confidence</span>
+                          <Badge className={`px-3 py-1 rounded-full text-sm font-mono border ${getConfidenceColor(confidence)}`}>
+                            {getConfidenceLabel(confidence)}
+                          </Badge>
+                        </div>
+                        <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${confidence}%` }}
+                            transition={{ duration: 2, ease: "easeOut", delay: 0.5 }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-400 mt-1 font-mono">
+                          <span>0%</span>
+                          <span className="font-medium text-white">{confidence}%</span>
+                          <span>100%</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-3xl font-bold text-slate-400 font-mono">
+                      Analysis Complete
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
             {/* Summary Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {getSummaryStats().map((stat, index) => (
-                <Card key={index} className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-                  <CardContent className="p-4 text-center">
-                    <stat.icon className={`w-6 h-6 mx-auto mb-2 ${stat.color}`} />
-                    <div className="text-sm text-slate-400 font-mono">{stat.label}</div>
-                    <div className="font-semibold text-white text-sm truncate font-mono">
-                      {stat.value}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mb-8"
+            >
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {getSummaryStats().map((stat, index) => (
+                  <Card key={index} className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                    <CardContent className="p-4 text-center">
+                      <stat.icon className={`w-6 h-6 mx-auto mb-2 ${stat.color}`} />
+                      <div className="text-sm text-slate-400 font-mono">{stat.label}</div>
+                      <div className="font-semibold text-white text-sm truncate font-mono">
+                        {stat.value}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Business Summary Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="mb-8"
+            >
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                <CardHeader 
+                  className="cursor-pointer"
+                  onClick={() => toggleSection('summary')}
+                >
+                  <CardTitle className="flex items-center justify-between text-white font-mono">
+                    <div className="flex items-center">
+                      <Eye className="w-5 h-5 mr-2 text-blue-400" />
+                      Business Analysis Summary
+                    </div>
+                    {expandedSections.summary ? (
+                      <ChevronUp className="w-5 h-5 text-slate-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-slate-400" />
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <AnimatePresence>
+                  {expandedSections.summary && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <CardContent className="space-y-6">
+                        <div>
+                          <h4 className="font-medium text-white mb-3 font-mono">Executive Summary</h4>
+                          <p className="text-slate-300 leading-relaxed font-mono">
+                            {valuationReport.businessSummary.summary}
+                          </p>
+                        </div>
+                        
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div>
+                            <h4 className="font-medium text-white mb-3 font-mono flex items-center">
+                              <Shield className="w-4 h-4 mr-2 text-green-400" />
+                              Key Strengths
+                            </h4>
+                            <ul className="space-y-2">
+                              {valuationReport.businessSummary.keyStrengths?.map((strength, index) => (
+                                <li key={index} className="flex items-start">
+                                  <CheckCircle className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+                                  <span className="text-slate-300 text-sm font-mono">{strength}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-medium text-white mb-3 font-mono flex items-center">
+                              <AlertTriangle className="w-4 h-4 mr-2 text-orange-400" />
+                              Risks & Considerations
+                            </h4>
+                            <ul className="space-y-2">
+                              {valuationReport.businessSummary.weaknessesOrRisks?.map((risk, index) => (
+                                <li key={index} className="flex items-start">
+                                  <AlertCircle className="w-4 h-4 mr-2 text-orange-400 mt-0.5 flex-shrink-0" />
+                                  <span className="text-slate-300 text-sm font-mono">{risk}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Badge className="bg-blue-900/30 border border-blue-500/30 text-blue-400 font-mono">
+                            Stage Assessment: {valuationReport.businessSummary.stageAssessment}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Card>
+            </motion.div>
+
+            {/* Recommended Methods Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="mb-8"
+            >
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                <CardHeader 
+                  className="cursor-pointer"
+                  onClick={() => toggleSection('methods')}
+                >
+                  <CardTitle className="flex items-center justify-between text-white font-mono">
+                    <div className="flex items-center">
+                      <Award className="w-5 h-5 mr-2 text-purple-400" />
+                      Recommended Valuation Methods
+                    </div>
+                    {expandedSections.methods ? (
+                      <ChevronUp className="w-5 h-5 text-slate-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-slate-400" />
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <AnimatePresence>
+                  {expandedSections.methods && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <CardContent>
+                        <div className="grid gap-4">
+                          {valuationReport.recommendedMethods.recommendedMethods.map((method, index) => (
+                            <div key={index} className="border border-slate-700 bg-slate-800/30 rounded-xl p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-medium text-white font-mono">{method.method}</h4>
+                                <div className="flex items-center space-x-2">
+                                  <span className={`font-bold font-mono ${getMethodConfidenceColor(method.confidence)}`}>
+                                    {Math.round(method.confidence * 100)}%
+                                  </span>
+                                  <Badge className={`px-2 py-1 text-xs ${getMethodConfidenceColor(method.confidence)} bg-slate-800 border border-current`}>
+                                    Confidence
+                                  </Badge>
+                                </div>
+                              </div>
+                              <p className="text-slate-300 text-sm font-mono">{method.reason}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Card>
+            </motion.div>
+
+            {/* Detailed Calculations Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.0 }}
+              className="mb-8"
+            >
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                <CardHeader 
+                  className="cursor-pointer"
+                  onClick={() => toggleSection('calculations')}
+                >
+                  <CardTitle className="flex items-center justify-between text-white font-mono">
+                    <div className="flex items-center">
+                      <BarChart3 className="w-5 h-5 mr-2 text-green-400" />
+                      Detailed Valuation Calculations
+                    </div>
+                    {expandedSections.calculations ? (
+                      <ChevronUp className="w-5 h-5 text-slate-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-slate-400" />
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <AnimatePresence>
+                  {expandedSections.calculations && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <CardContent className="space-y-6">
+                        {valuationReport.calculations.map((calc, index) => (
+                          <div key={index} className="border border-slate-700 bg-slate-800/30 rounded-xl p-6">
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="font-medium text-white font-mono text-lg">{calc.method}</h4>
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-blue-400 font-mono">
+                                  ${calc.valuationRange.lower}M - ${calc.valuationRange.upper}M
+                                </div>
+                                <div className="text-xs text-slate-400 font-mono">Valuation Range</div>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-4">
+                              <div>
+                                <h5 className="font-medium text-white mb-2 font-mono">Methodology</h5>
+                                <p className="text-slate-300 text-sm font-mono leading-relaxed">
+                                  {calc.explanation}
+                                </p>
+                              </div>
+                              
+                              <div>
+                                <h5 className="font-medium text-white mb-2 font-mono">Analysis</h5>
+                                <p className="text-slate-300 text-sm font-mono leading-relaxed">
+                                  {calc.narrative}
+                                </p>
+                              </div>
+                              
+                              {typeof calc.calculation === 'object' ? (
+                                <details className="text-xs text-slate-400 font-mono">
+                                  <summary className="cursor-pointer hover:text-slate-300 transition-colors mb-2">
+                                    View detailed calculation breakdown
+                                  </summary>
+                                  <div className="mt-2 p-4 bg-slate-950/50 rounded-lg border border-slate-700">
+                                    <pre className="whitespace-pre-wrap text-slate-300">
+                                      {JSON.stringify(calc.calculation, null, 2)}
+                                    </pre>
+                                  </div>
+                                </details>
+                              ) : (
+                                <details className="text-xs text-slate-400 font-mono">
+                                  <summary className="cursor-pointer hover:text-slate-300 transition-colors">
+                                    View calculation details
+                                  </summary>
+                                  <div className="mt-2 p-4 bg-slate-950/50 rounded-lg border border-slate-700 whitespace-pre-wrap">
+                                    {calc.calculation}
+                                  </div>
+                                </details>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Card>
+            </motion.div>
+
+            {/* Competitor Analysis Section */}
+            {valuationReport.competitorAnalysis && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2 }}
+                className="mb-8"
+              >
+                <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                  <CardHeader 
+                    className="cursor-pointer"
+                    onClick={() => toggleSection('competitors')}
+                  >
+                    <CardTitle className="flex items-center justify-between text-white font-mono">
+                      <div className="flex items-center">
+                        <Target className="w-5 h-5 mr-2 text-orange-400" />
+                        Competitive Landscape Analysis
+                      </div>
+                      {expandedSections.competitors ? (
+                        <ChevronUp className="w-5 h-5 text-slate-400" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-slate-400" />
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <AnimatePresence>
+                    {expandedSections.competitors && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <CardContent className="space-y-6">
+                          {valuationReport.competitorAnalysis.competitors && (
+                            <div>
+                              <h4 className="font-medium text-white mb-3 font-mono">Key Competitors</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {valuationReport.competitorAnalysis.competitors.map((competitor, index) => (
+                                  <Badge key={index} className="bg-orange-900/30 border border-orange-500/30 text-orange-400 font-mono">
+                                    {competitor}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {valuationReport.competitorAnalysis.competitorBenchmarks && 
+                           valuationReport.competitorAnalysis.competitorBenchmarks.length > 0 && (
+                            <div>
+                              <h4 className="font-medium text-white mb-3 font-mono">Competitor Benchmarks</h4>
+                              <div className="space-y-3">
+                                {valuationReport.competitorAnalysis.competitorBenchmarks.map((benchmark, index) => (
+                                  <div key={index} className="border border-slate-700 bg-slate-800/30 rounded-lg p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h5 className="font-medium text-white font-mono">{benchmark.name}</h5>
+                                      <Badge className="bg-slate-700 text-slate-200 font-mono text-xs">
+                                        {benchmark.valuation}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-slate-300 text-sm font-mono">{benchmark.difference}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {valuationReport.competitorAnalysis.commentary && (
+                            <div>
+                              <h4 className="font-medium text-white mb-3 font-mono">Market Commentary</h4>
+                              <p className="text-slate-300 leading-relaxed font-mono">
+                                {valuationReport.competitorAnalysis.commentary}
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Strategic Context Section */}
+            {valuationReport.strategicContext && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.4 }}
+                className="mb-8"
+              >
+                <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                  <CardHeader 
+                    className="cursor-pointer"
+                    onClick={() => toggleSection('strategic')}
+                  >
+                    <CardTitle className="flex items-center justify-between text-white font-mono">
+                      <div className="flex items-center">
+                        <Zap className="w-5 h-5 mr-2 text-purple-400" />
+                        Strategic Investment Context
+                      </div>
+                      {expandedSections.strategic ? (
+                        <ChevronUp className="w-5 h-5 text-slate-400" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-slate-400" />
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <AnimatePresence>
+                    {expandedSections.strategic && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <CardContent>
+                          <div className="prose prose-invert max-w-none">
+                            {valuationReport.strategicContext.split('\n\n').map((paragraph, index) => (
+                              <p key={index} className="text-slate-300 leading-relaxed font-mono mb-4">
+                                {paragraph}
+                              </p>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Action Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.6 }}
+              className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 mb-8"
+            >
+              <Button
+                onClick={() => {
+                  if (!valuationReport) return;
+                  generateValuationPDF(wizardData, valuationReport, confidence);
+                }}
+                disabled={!valuationReport}
+                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl py-3 px-6 text-lg font-mono"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Download Comprehensive Report
+              </Button>
+
+              <Button
+                onClick={() => {
+                  const valRange = getValuationRange();
+                  const shareText = valRange
+                    ? `${wizardData.step1?.businessName} valuation: ${formatCurrency(valRange.lower)} - ${formatCurrency(valRange.upper)}`
+                    : `${wizardData.step1?.businessName} valuation analysis complete`;
+
+                  if (navigator.share) {
+                    navigator.share({
+                      title: `${wizardData.step1?.businessName} Valuation`,
+                      text: shareText,
+                      url: window.location.href,
+                    });
+                  } else {
+                    navigator.clipboard.writeText(shareText);
+                  }
+                }}
+                variant="outline"
+                className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white py-3 px-6 font-mono"
+              >
+                <Share2 className="w-5 h-5 mr-2" />
+                Share Results
+              </Button>
+
+              <Button
+                onClick={onStartOver}
+                variant="outline"
+                className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white py-3 px-6 font-mono"
+              >
+                <RefreshCw className="w-5 h-5 mr-2" />
+                New Analysis
+              </Button>
+            </motion.div>
+
+            {/* Recommendations Section */}
+            {valuationReport.finalValuation?.recommendations && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.8 }}
+              >
+                <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-white font-mono">
+                      <ArrowRight className="w-5 h-5 mr-2 text-blue-400" />
+                      Strategic Recommendations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-3">
+                      {Array.isArray(valuationReport.finalValuation.recommendations) ? (
+                        valuationReport.finalValuation.recommendations.map((rec, index) => (
+                          <div key={index} className="flex items-start space-x-3 p-3 bg-blue-900/10 border border-blue-500/20 rounded-lg">
+                            <Lightbulb className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                            <span className="text-slate-300 font-mono">{rec}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex items-start space-x-3 p-3 bg-blue-900/10 border border-blue-500/20 rounded-lg">
+                          <Lightbulb className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                          <span className="text-slate-300 font-mono">{valuationReport.finalValuation.recommendations}</span>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-
-            {/* Business Summary */}
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center text-white font-mono">
-                  <Eye className="w-5 h-5 mr-2 text-blue-400" />
-                  AI Business Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm text-slate-300">
-                <div>
-                  <h4 className="font-medium text-white mb-2 font-mono">Summary</h4>
-                  <p className="font-mono">{valuationReport.businessSummary.summary}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-white mb-2 font-mono">
-                    Stage Assessment
-                  </h4>
-                  <Badge className="bg-blue-900/30 border border-blue-500/30 text-blue-400 font-mono">
-                    {valuationReport.businessSummary.stageAssessment}
-                  </Badge>
-                </div>
-                {valuationReport.businessSummary.keyStrengths && (
-                  <div>
-                    <h4 className="font-medium text-white mb-2 font-mono">
-                      Key Strengths
-                    </h4>
-                    <ul className="list-disc list-inside space-y-1 font-mono">
-                      {valuationReport.businessSummary.keyStrengths.map(
-                        (strength, index) => (
-                          <li key={index}>{strength}</li>
-                        ),
-                      )}
-                    </ul>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Valuation Methods */}
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center text-white font-mono">
-                  <BarChart3 className="w-5 h-5 mr-2 text-green-400" />
-                  Valuation Methods Applied
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {valuationReport.calculations.map((calc, index) => (
-                  <div
-                    key={index}
-                    className="border border-slate-700 bg-slate-800/30 rounded-xl p-4 backdrop-blur-sm"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-white font-mono">
-                        {calc.method}
-                      </h4>
-                      <span className="text-lg font-bold text-blue-400 font-mono">
-                        ${calc.valuationRange.lower}M - $
-                        {calc.valuationRange.upper}M
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-300 mb-2 font-mono">
-                      {calc.explanation}
-                    </p>
-                    <details className="text-xs text-slate-400 font-mono">
-                      <summary className="cursor-pointer hover:text-slate-300 transition-colors">
-                        View calculation details
-                      </summary>
-                      <div className="mt-2 p-3 bg-slate-950/50 rounded-lg whitespace-pre-wrap">
-                        {calc.calculation}
-                      </div>
-                    </details>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Strategic Context */}
-            {valuationReport.strategicContext && (
-              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-white font-mono">
-                    <Zap className="w-5 h-5 mr-2 text-purple-400" />
-                    Strategic Investment Context
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-slate-300 leading-relaxed font-mono">
-                    {valuationReport.strategicContext}
-                  </p>
-                </CardContent>
-              </Card>
+              </motion.div>
             )}
-          </motion.div>
-        )}
-
-        {/* Action Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.1 }}
-          className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 mb-8"
-        >
-          <Button
-            onClick={() => {
-              if (!valuationReport) return;
-              generateValuationPDF(wizardData, valuationReport, confidence);
-            }}
-            disabled={isGenerating || error || !valuationReport}
-            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl py-3 px-6 text-lg font-mono"
-          >
-            <Download className="w-5 h-5 mr-2" />
-            Download PDF Report
-          </Button>
-
-          <Button
-            onClick={() => {
-              const valRange = getValuationRange();
-              const shareText = valRange
-                ? `${wizardData.step1?.businessName} valuation: ${formatCurrency(valRange.lower)} - ${formatCurrency(valRange.upper)}`
-                : `${wizardData.step1?.businessName} valuation analysis complete`;
-
-              if (navigator.share) {
-                navigator.share({
-                  title: `${wizardData.step1?.businessName} Valuation`,
-                  text: shareText,
-                  url: window.location.href,
-                });
-              } else {
-                navigator.clipboard.writeText(shareText);
-              }
-            }}
-            disabled={isGenerating || error}
-            variant="outline"
-            className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white py-3 px-6 font-mono"
-          >
-            <Share2 className="w-5 h-5 mr-2" />
-            Share Results
-          </Button>
-
-          <Button
-            onClick={onStartOver}
-            variant="outline"
-            className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white py-3 px-6 font-mono"
-          >
-            <RefreshCw className="w-5 h-5 mr-2" />
-            Start Over
-          </Button>
-        </motion.div>
-
-        {/* Next Steps */}
-        {!isGenerating && !error && valuationReport && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.3 }}
-          >
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center text-white font-mono">
-                  <ArrowRight className="w-5 h-5 mr-2 text-blue-400" />
-                  What's Next?
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-300 font-mono">
-                <p>• Use this AI-powered valuation as a starting point for investor discussions</p>
-                <p>• Review the detailed calculations and methodology for each valuation method</p>
-                <p>• Consider the competitive analysis to understand your market position</p>
-                <p>• Update your metrics regularly and re-run the analysis as you grow</p>
-                <p>• Share these insights with advisors and potential investors</p>
-
-                {valuationReport.finalValuation?.recommendations && (
-                  <div className="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-xl">
-                    <h4 className="font-medium text-blue-400 mb-2 font-mono flex items-center">
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      AI Recommendations
-                    </h4>
-                    <div className="text-sm text-blue-300 font-mono">
-                      {Array.isArray(valuationReport.finalValuation.recommendations) ? (
-                        <ul className="space-y-1">
-                          {valuationReport.finalValuation.recommendations.map((rec, index) => (
-                            <li key={index}>• {rec}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>• {valuationReport.finalValuation.recommendations}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+          </>
         )}
       </div>
     </div>
