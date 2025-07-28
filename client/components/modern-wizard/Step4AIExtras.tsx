@@ -5,22 +5,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   Brain,
-  Upload,
-  FileText,
   Link,
   CheckCircle,
-  X,
   Loader2,
   ExternalLink,
   Globe,
-  Paperclip,
   ChevronDown,
   Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileUpload } from "../FileUpload";
-import { UploadResponse } from "@/lib/api";
 
 const formSchema = z.object({
   linkedinUrl: z
