@@ -225,8 +225,14 @@ function transformAPIResponseToValuationReport(apiResponse: any, wizardData: Wiz
       try {
         const parsed = JSON.parse(strategicContext);
 
-        // Handle new format with strategicContext object containing paragraph1, paragraph2, etc.
-        if (parsed.strategicContext && typeof parsed.strategicContext === 'object') {
+        // Handle new array format with strategicContext containing array of paragraph objects
+        if (parsed.strategicContext && Array.isArray(parsed.strategicContext)) {
+          strategicContext = parsed.strategicContext
+            .map((item: any) => item.paragraph)
+            .join('\n\n');
+        }
+        // Handle format with strategicContext object containing paragraph1, paragraph2, etc.
+        else if (parsed.strategicContext && typeof parsed.strategicContext === 'object') {
           const paragraphs = Object.keys(parsed.strategicContext)
             .filter(key => key.startsWith('paragraph'))
             .sort()
