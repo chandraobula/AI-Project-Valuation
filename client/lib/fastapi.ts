@@ -232,9 +232,43 @@ function transformAPIResponseToValuationReport(apiResponse: any, wizardData: Wiz
       }
     }
 
+    // Fix finalValuation.finalRange if it's a string
+    let finalValuation = apiResponse.finalValuation;
+    if (finalValuation && typeof finalValuation.finalRange === 'string') {
+      // Extract numbers from string like "$120M–$160M"
+      const rangeMatch = finalValuation.finalRange.match(/\$(\d+(?:\.\d+)?)([KMB])?[–-]\$(\d+(?:\.\d+)?)([KMB])?/);
+      if (rangeMatch) {
+        const [, lowerNum, lowerUnit, upperNum, upperUnit] = rangeMatch;
+        const multipliers: { [key: string]: number } = { K: 1000, M: 1000000, B: 1000000000 };
+
+        const lower = parseFloat(lowerNum) * (multipliers[lowerUnit] || 1000); // Default to thousands
+        const upper = parseFloat(upperNum) * (multipliers[upperUnit] || 1000); // Default to thousands
+
+        finalValuation = {
+          ...finalValuation,
+          finalRange: {
+            lower: lower / 1000000, // Convert to millions for consistency
+            upper: upper / 1000000   // Convert to millions for consistency
+          }
+        };
+      } else {
+        // Fallback: use calculation ranges if finalRange parsing fails
+        if (apiResponse.calculations && apiResponse.calculations.length > 0) {
+          const ranges = apiResponse.calculations.map((calc: any) => calc.valuationRange);
+          const lower = Math.min(...ranges.map((r: any) => r.lower));
+          const upper = Math.max(...ranges.map((r: any) => r.upper));
+          finalValuation = {
+            ...finalValuation,
+            finalRange: { lower, upper }
+          };
+        }
+      }
+    }
+
     return {
       ...apiResponse,
-      strategicContext: strategicContext || apiResponse.strategicContext
+      strategicContext: strategicContext || apiResponse.strategicContext,
+      finalValuation
     };
   }
 
