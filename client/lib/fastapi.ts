@@ -217,6 +217,28 @@ function transformWizardDataToBackend(wizardData: WizardData): any {
 
 // Transform API response to our ValuationReport format
 function transformAPIResponseToValuationReport(apiResponse: any, wizardData: WizardData): ValuationReport {
+  // If the response already matches our expected format, return it directly
+  if (apiResponse.businessSummary && apiResponse.recommendedMethods && apiResponse.calculations) {
+    // Parse strategic context if it's a JSON string
+    let strategicContext = apiResponse.strategicContext;
+    if (typeof strategicContext === 'string' && strategicContext.includes('strategicValuationContext')) {
+      try {
+        const parsed = JSON.parse(strategicContext);
+        strategicContext = parsed.strategicValuationContext
+          .map((item: any) => item.paragraph)
+          .join('\n\n');
+      } catch (e) {
+        // Keep as string if parsing fails
+      }
+    }
+
+    return {
+      ...apiResponse,
+      strategicContext: strategicContext || apiResponse.strategicContext
+    };
+  }
+
+  // Fallback transformation for legacy format
   const businessName = wizardData.step1?.businessName || "Your Company";
 
   // Handle different response formats
@@ -271,30 +293,20 @@ function transformAPIResponseToValuationReport(apiResponse: any, wizardData: Wiz
         calculation: `Annual Revenue ($${reportData.revenue12m || 0}K) × Industry Multiple (3-5x) × Growth Factor`,
         narrative: "This method values the company based on revenue multiples from comparable companies in the same industry and stage.",
       },
-      {
-        method: "Customer Value Analysis",
-        valuationRange: {
-          lower: Math.max(3, Math.round((reportData.customerCount || 0) * 0.0001)),
-          upper: Math.max(6, Math.round((reportData.customerCount || 0) * 0.0002))
-        },
-        explanation: `Based on ${reportData.customerCount || 0} customers and average customer lifetime value`,
-        calculation: `Customer Count × Average LTV × Multiple Factor`,
-        narrative: "Customer-based valuation considering the size and growth of the customer base.",
-      },
     ],
     competitorAnalysis: {
       competitors: ["Industry Leader 1", "Industry Leader 2", "Emerging Competitor"],
       competitorBenchmarks: [],
       commentary: `The competitive landscape in ${reportData.industry} shows healthy market dynamics with room for multiple players. ${businessName} has positioned itself well with ${reportData.differentiator || 'strong differentiation'}.`,
     },
-    strategicContext: `${businessName} operates in the ${reportData.industry} sector with ${reportData.customerCount || 0} customers and ${reportData.growthRate || 0}% growth rate. The company has raised $${reportData.fundingRaised || 0}K to date and is positioned for continued growth in this expanding market.`,
+    strategicContext: `${businessName} operates in the ${reportData.industry} sector. The company has raised $${reportData.fundingRaised || 0}K to date and is positioned for continued growth in this expanding market.`,
     finalValuation: {
       finalRange: {
         lower: Math.max(4, Math.round(((reportData.revenue12m || 0) * 0.0035))),
         upper: Math.max(7, Math.round(((reportData.revenue12m || 0) * 0.0055)))
       },
       methodComparisons: "Revenue multiple and customer value methods show convergent ranges indicating consistent valuation",
-      justification: `Valuation reflects current metrics including $${reportData.revenue12m || 0}K revenue, ${reportData.customerCount || 0} customers, and ${reportData.growthRate || 0}% growth rate`,
+      justification: `Valuation reflects current metrics including $${reportData.revenue12m || 0}K revenue`,
       recommendations: [
         "Continue focus on customer acquisition and retention",
         "Optimize unit economics and reduce burn rate",
