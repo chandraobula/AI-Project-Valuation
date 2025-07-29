@@ -536,7 +536,7 @@ export const fastapiService = {
       });
 
       const response = await externalApi.post(
-        "https://e3c8babef5b7.ngrok-free.app/valuation-report",
+        "https://74c41b5cf8e8.ngrok-free.app/valuation-report",
         payload,
       );
 
