@@ -1,17 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   ChevronDown,
-  Flag,
-  Building2,
-  Rocket,
-  Check,
-  X,
-  HelpCircle,
+  Search,
+  CheckCircle,
+  Building,
+  Globe,
+  Briefcase,
+  Rocket
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 const formSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
@@ -30,7 +33,7 @@ interface Step1Props {
 }
 
 const countries = [
-  { code: "US", name: "United States", flag: "🇺🇸" },
+  { code: "US", name: "United States", flag: "��🇸" },
   { code: "CA", name: "Canada", flag: "🇨🇦" },
   { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
   { code: "AU", name: "Australia", flag: "🇦🇺" },
@@ -40,6 +43,8 @@ const countries = [
   { code: "SG", name: "Singapore", flag: "🇸🇬" },
   { code: "JP", name: "Japan", flag: "🇯🇵" },
   { code: "BR", name: "Brazil", flag: "🇧🇷" },
+  { code: "NL", name: "Netherlands", flag: "🇳🇱" },
+  { code: "CH", name: "Switzerland", flag: "🇨🇭" },
 ];
 
 const industries = [
@@ -48,7 +53,7 @@ const industries = [
   { value: "fintech", label: "FinTech", icon: "💳" },
   { value: "healthtech", label: "HealthTech", icon: "🏥" },
   { value: "edtech", label: "EdTech", icon: "📚" },
-  { value: "ai", label: "AI/Machine Learning", icon: "🤖" },
+  { value: "ai", label: "AI/ML", icon: "🤖" },
   { value: "biotech", label: "Biotech", icon: "🧬" },
   { value: "cleantech", label: "CleanTech", icon: "🌱" },
   { value: "gaming", label: "Gaming", icon: "🎮" },
@@ -58,36 +63,81 @@ const industries = [
 const stages = [
   {
     value: "idea",
-    label: "Idea",
-    description: "Concept stage, validating the idea",
+    label: "Idea Stage",
+    description: "Concept validation phase",
     icon: "💡",
   },
   {
     value: "mvp",
     label: "MVP",
-    description: "Building minimum viable product",
+    description: "Building product",
     icon: "🔧",
   },
   {
     value: "launched",
     label: "Launched",
-    description: "Product is live, getting traction",
+    description: "Product is live",
     icon: "🚀",
   },
   {
     value: "growth",
     label: "Growth",
-    description: "Scaling and expanding",
+    description: "Scaling phase",
     icon: "📈",
   },
 ];
 
 export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
-  const [showStageDropdown, setShowStageDropdown] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
-  const [showTooltip, setShowTooltip] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Calculate dropdown position and handle outside clicks
+  useEffect(() => {
+    const updatePosition = () => {
+      if (buttonRef.current && showCountryDropdown) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 8,
+          left: rect.left,
+          width: rect.width
+        });
+      }
+    };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showCountryDropdown) {
+        const target = event.target as Element;
+        if (!target.closest('.country-dropdown-portal') && !buttonRef.current?.contains(target)) {
+          setShowCountryDropdown(false);
+        }
+      }
+    };
+
+    const handleScroll = () => {
+      updatePosition();
+    };
+
+    const handleResize = () => {
+      updatePosition();
+    };
+
+    if (showCountryDropdown) {
+      updatePosition();
+      // Use passive listeners for better performance during scroll
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      window.addEventListener('resize', handleResize, { passive: true });
+    }
+
+    document.addEventListener('click', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [showCountryDropdown]);
 
   const {
     register,
@@ -118,7 +168,7 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [watchedValues, onSave]);
+  }, [watchedValues.businessName, watchedValues.country, watchedValues.industry, watchedValues.stage, watchedValues.isLaunched, onSave]);
 
   const selectedCountry = countries.find(
     (c) => c.name === watchedValues.country,
@@ -144,313 +194,306 @@ export function Step1QuickStart({ onNext, initialData, onSave }: Step1Props) {
 
   const handleIndustrySelect = (industry: (typeof industries)[0]) => {
     setValue("industry", industry.value, { shouldValidate: true });
-    setShowIndustryDropdown(false);
   };
 
   const handleStageSelect = (stage: (typeof stages)[0]) => {
     setValue("stage", stage.value, { shouldValidate: true });
-    setShowStageDropdown(false);
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4">
+    <div className="max-w-4xl mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="wizard-card p-8"
       >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4"
-          >
-            <Rocket className="w-8 h-8 text-white" />
-          </motion.div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            👋 Welcome! Let's begin with the basics
-          </h1>
-          <p className="text-gray-600">
-            Just a few quick questions to get started - this should take less
-            than 2 minutes
-          </p>
-        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          {/* Business Name & Country Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Business Name */}
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Building className="w-5 h-5 text-blue-400" />
+                  <label className="text-sm font-medium text-white font-mono">
+                    Business Name
+                  </label>
+                  {watchedValues.businessName && (
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  )}
+                </div>
+                <input
+                  {...register("businessName")}
+                  placeholder="e.g., TechCorp Solutions"
+                  className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"
+                />
+                {errors.businessName && (
+                  <p className="text-red-400 text-sm mt-2 font-mono">
+                    {errors.businessName.message}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Business Name */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-900">
-              Business Name
-            </label>
-            <input
-              {...register("businessName")}
-              placeholder="e.g., InferAI"
-              className="wizard-input w-full"
-            />
-            {errors.businessName && (
-              <motion.p
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="text-sm text-red-500"
-              >
-                {errors.businessName.message}
-              </motion.p>
-            )}
+            {/* Country */}
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm relative country-dropdown-container">
+              <CardContent className="p-6 relative">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Globe className="w-5 h-5 text-blue-400" />
+                  <label className="text-sm font-medium text-white font-mono">
+                    Country
+                  </label>
+                  {watchedValues.country && (
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  )}
+                </div>
+                <button
+                  ref={buttonRef}
+                  type="button"
+                  onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                  className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all flex items-center justify-between font-mono"
+                >
+                  <div className="flex items-center space-x-3">
+                    {selectedCountry ? (
+                      <>
+                        <span className="text-lg">{selectedCountry.flag}</span>
+                        <span>{selectedCountry.name}</span>
+                      </>
+                    ) : (
+                      <span className="text-slate-400">Select country</span>
+                    )}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                </button>
+
+{/* Portal-based dropdown to avoid clipping */}
+                {showCountryDropdown && createPortal(
+                  <AnimatePresence>
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      className="fixed bg-slate-900/95 border border-slate-700 rounded-lg shadow-2xl z-[99999] max-h-64 overflow-hidden backdrop-blur-xl country-dropdown-portal"
+                      style={{
+                        top: dropdownPosition.top,
+                        left: dropdownPosition.left,
+                        width: dropdownPosition.width,
+                      }}
+                    >
+                      <div className="p-3 border-b border-slate-700">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                          <input
+                            type="text"
+                            placeholder="Search countries..."
+                            value={countrySearch}
+                            onChange={(e) => setCountrySearch(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 font-mono"
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredCountries.map((country) => (
+                          <button
+                            key={country.code}
+                            type="button"
+                            onClick={() => handleCountrySelect(country)}
+                            className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-slate-800/50 transition-colors text-left font-mono"
+                          >
+                            <span className="text-lg">{country.flag}</span>
+                            <span className="text-white">{country.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>,
+                  document.body
+                )}
+
+                {errors.country && (
+                  <p className="text-red-400 text-sm mt-2 font-mono">
+                    {errors.country.message}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Country */}
-          <div className="space-y-2 relative">
-            <label className="block text-sm font-medium text-gray-900">
-              Country
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-              className="wizard-input w-full flex items-center justify-between"
-            >
-              <div className="flex items-center space-x-3">
-                {selectedCountry ? (
-                  <>
-                    <span className="text-lg">{selectedCountry.flag}</span>
-                    <span>{selectedCountry.name}</span>
-                  </>
-                ) : (
-                  <span className="text-gray-500">Select your country</span>
+          {/* Industry Selection */}
+          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <Briefcase className="w-5 h-5 text-blue-400" />
+                <label className="text-sm font-medium text-white font-mono">
+                  Industry
+                </label>
+                {watchedValues.industry && (
+                  <CheckCircle className="w-4 h-4 text-green-400" />
                 )}
               </div>
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            </button>
-
-            <AnimatePresence>
-              {showCountryDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 max-h-60 overflow-hidden"
-                >
-                  <div className="p-3 border-b border-gray-100">
-                    <input
-                      type="text"
-                      placeholder="Search countries..."
-                      value={countrySearch}
-                      onChange={(e) => setCountrySearch(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {filteredCountries.map((country) => (
-                      <button
-                        key={country.code}
-                        type="button"
-                        onClick={() => handleCountrySelect(country)}
-                        className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-                      >
-                        <span className="text-lg">{country.flag}</span>
-                        <span className="text-gray-900">{country.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {errors.country && (
-              <motion.p
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="text-sm text-red-500"
-              >
-                {errors.country.message}
-              </motion.p>
-            )}
-          </div>
-
-          {/* Industry */}
-          <div className="space-y-2 relative">
-            <label className="block text-sm font-medium text-gray-900">
-              Industry
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowIndustryDropdown(!showIndustryDropdown)}
-              className="wizard-input w-full flex items-center justify-between"
-            >
-              <div className="flex items-center space-x-3">
-                {selectedIndustry ? (
-                  <>
-                    <span className="text-lg">{selectedIndustry.icon}</span>
-                    <span>{selectedIndustry.label}</span>
-                  </>
-                ) : (
-                  <span className="text-gray-500">
-                    What industry best describes your business?
-                  </span>
-                )}
-              </div>
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            </button>
-
-            <AnimatePresence>
-              {showIndustryDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 max-h-60 overflow-y-auto"
-                >
-                  {industries.map((industry) => (
-                    <button
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {industries.map((industry) => {
+                  const isSelected = selectedIndustry?.value === industry.value;
+                  
+                  return (
+                    <motion.button
                       key={industry.value}
                       type="button"
                       onClick={() => handleIndustrySelect(industry)}
-                      className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                      className={`p-3 rounded-lg border transition-all text-center ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-500/20 text-white'
+                          : 'border-slate-700 bg-slate-800/30 text-slate-300 hover:border-slate-600 hover:bg-slate-800/50'
+                      }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <span className="text-lg">{industry.icon}</span>
-                      <span className="text-gray-900">{industry.label}</span>
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {errors.industry && (
-              <motion.p
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="text-sm text-red-500"
-              >
-                {errors.industry.message}
-              </motion.p>
-            )}
-          </div>
-
-          {/* Business Stage */}
-          <div className="space-y-2 relative">
-            <label className="block text-sm font-medium text-gray-900">
-              Business Stage
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowStageDropdown(!showStageDropdown)}
-              className="wizard-input w-full flex items-center justify-between"
-            >
-              <div className="flex items-center space-x-3">
-                {selectedStage ? (
-                  <>
-                    <span className="text-lg">{selectedStage.icon}</span>
-                    <span>{selectedStage.label}</span>
-                  </>
-                ) : (
-                  <span className="text-gray-500">How far along are you?</span>
-                )}
+                      <div className="text-2xl mb-1">{industry.icon}</div>
+                      <div className="text-xs font-mono">{industry.label}</div>
+                    </motion.button>
+                  );
+                })}
               </div>
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            </button>
-
-            <AnimatePresence>
-              {showStageDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-50"
-                >
-                  {stages.map((stage) => (
-                    <button
-                      key={stage.value}
-                      type="button"
-                      onClick={() => handleStageSelect(stage)}
-                      className="w-full flex items-start space-x-3 px-4 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                    >
-                      <span className="text-lg mt-0.5">{stage.icon}</span>
-                      <div className="text-left">
-                        <div className="text-gray-900 font-medium">
-                          {stage.label}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {stage.description}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </motion.div>
+              {errors.industry && (
+                <p className="text-red-400 text-sm mt-2 font-mono">
+                  {errors.industry.message}
+                </p>
               )}
-            </AnimatePresence>
+            </CardContent>
+          </Card>
 
-            {errors.stage && (
-              <motion.p
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="text-sm text-red-500"
-              >
-                {errors.stage.message}
-              </motion.p>
-            )}
-          </div>
+          {/* Stage & Launch Status Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Business Stage */}
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Rocket className="w-5 h-5 text-blue-400" />
+                  <label className="text-sm font-medium text-white font-mono">
+                    Business Stage
+                  </label>
+                  {watchedValues.stage && (
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {stages.map((stage) => {
+                    const isSelected = selectedStage?.value === stage.value;
+                    
+                    return (
+                      <motion.button
+                        key={stage.value}
+                        type="button"
+                        onClick={() => handleStageSelect(stage)}
+                        className={`w-full p-3 rounded-lg border transition-all text-left ${
+                          isSelected
+                            ? 'border-blue-500 bg-blue-500/20 text-white'
+                            : 'border-slate-700 bg-slate-800/30 text-slate-300 hover:border-slate-600'
+                        }`}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span className="text-xl">{stage.icon}</span>
+                          <div>
+                            <div className="font-medium font-mono">{stage.label}</div>
+                            <div className="text-xs text-slate-400 font-mono">{stage.description}</div>
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+                {errors.stage && (
+                  <p className="text-red-400 text-sm mt-2 font-mono">
+                    {errors.stage.message}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Product Launched */}
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-900">
-              Product Launched?
-            </label>
-            <div className="flex space-x-3">
-              <button
-                type="button"
-                onClick={() =>
-                  setValue("isLaunched", false, { shouldValidate: true })
-                }
-                className={`flex-1 flex items-center justify-center space-x-2 p-4 rounded-2xl border-2 transition-all ${
-                  watchedValues.isLaunched === false
-                    ? "border-blue-500 bg-blue-50 text-blue-700"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <span className="text-2xl">🚫</span>
-                <span className="font-medium">No</span>
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setValue("isLaunched", true, { shouldValidate: true })
-                }
-                className={`flex-1 flex items-center justify-center space-x-2 p-4 rounded-2xl border-2 transition-all ${
-                  watchedValues.isLaunched === true
-                    ? "border-blue-500 bg-blue-50 text-blue-700"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <span className="text-2xl">✅</span>
-                <span className="font-medium">Yes</span>
-              </button>
-            </div>
+            {/* Product Launch Status */}
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                  <label className="text-sm font-medium text-white font-mono">
+                    Product Status
+                  </label>
+                  {watchedValues.isLaunched !== undefined && (
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <motion.button
+                    type="button"
+                    onClick={() => setValue("isLaunched", false, { shouldValidate: true })}
+                    className={`w-full p-4 rounded-lg border transition-all text-left ${
+                      watchedValues.isLaunched === false
+                        ? 'border-orange-500 bg-orange-500/20 text-white'
+                        : 'border-slate-700 bg-slate-800/30 text-slate-300 hover:border-slate-600'
+                    }`}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">🔧</span>
+                      <div>
+                        <div className="font-medium font-mono">Pre-Launch</div>
+                        <div className="text-xs text-slate-400 font-mono">Still building</div>
+                      </div>
+                    </div>
+                  </motion.button>
+                  <motion.button
+                    type="button"
+                    onClick={() => setValue("isLaunched", true, { shouldValidate: true })}
+                    className={`w-full p-4 rounded-lg border transition-all text-left ${
+                      watchedValues.isLaunched === true
+                        ? 'border-green-500 bg-green-500/20 text-white'
+                        : 'border-slate-700 bg-slate-800/30 text-slate-300 hover:border-slate-600'
+                    }`}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">🚀</span>
+                      <div>
+                        <div className="font-medium font-mono">Launched</div>
+                        <div className="text-xs text-slate-400 font-mono">Live product</div>
+                      </div>
+                    </div>
+                  </motion.button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Next Button */}
-          <motion.button
-            type="submit"
-            disabled={!isValid}
-            whileHover={{ scale: isValid ? 1.02 : 1 }}
-            whileTap={{ scale: isValid ? 0.98 : 1 }}
-            className={`w-full py-4 px-6 rounded-2xl font-semibold text-lg transition-all ${
-              isValid
-                ? "wizard-button-primary"
-                : "bg-gray-200 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            → Next
-          </motion.button>
-        </form>
+          <div className="flex justify-end pt-6">
+            <Button
+              type="submit"
+              disabled={!isValid}
+              className={`px-8 py-3 rounded-lg font-medium transition-all font-mono ${
+                isValid
+                  ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl"
+                  : "bg-slate-800 text-slate-500 cursor-not-allowed"
+              }`}
+            >
+              Continue to Financial Data
+              <ChevronDown className="w-4 h-4 ml-2 rotate-[-90deg]" />
+            </Button>
+          </div>
 
-        {/* Auto-save indicator */}
-        <div className="mt-4 text-center">
-          <p className="text-xs text-gray-500">
-            🔒 Your progress is automatically saved
-          </p>
-        </div>
+          {/* Auto-save indicator */}
+          <div className="text-center">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 bg-slate-800/50 rounded-full text-xs text-slate-400 font-mono">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span>Auto-saved</span>
+            </div>
+          </div>
+        </form>
       </motion.div>
     </div>
   );

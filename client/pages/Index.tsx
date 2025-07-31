@@ -1,5 +1,8 @@
-import { ModernWizardApp } from "@/components/modern-wizard/ModernWizardApp";
+import { useNavigate } from "react-router-dom";
+import { LandingPage } from "@/components/LandingPage";
 
 export default function Index() {
-  return <ModernWizardApp />;
+  const navigate = useNavigate();
+
+  return <LandingPage onStartWizard={() => navigate('/wizard')} />;
 }
